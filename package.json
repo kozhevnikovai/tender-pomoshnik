@@ -1,0 +1,76 @@
+{
+  "name": "tender-pomoshnik",
+  "version": "1.0.0",
+  "description": "Тендерный помощник: разбор закупок по 44-ФЗ и 223-ФЗ с цитатами и ссылками на закон. Локально, для малого бизнеса.",
+  "type": "module",
+  "bin": {
+    "tender": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "rules",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "eval": "node evals/run.mjs && EVAL_CASES=evals/holdout EVAL_OUT=evals/holdout-results node evals/run.mjs",
+    "rules:check": "node scripts/check-rules.mjs",
+    "prepublishOnly": "npm run build && npm test",
+    "build:mcpb": "npm run build && node scripts/build-mcpb.mjs",
+    "eval:fetch": "node evals/fetch.mjs",
+    "images": "node scripts/draw-images.mjs"
+  },
+  "keywords": [
+    "44-fz",
+    "223-fz",
+    "goszakupki",
+    "tender",
+    "zakupki",
+    "eis",
+    "russian",
+    "offline",
+    "mcp",
+    "claude"
+  ],
+  "author": "Egor Kozhevnikov (https://github.com/kozhevnikovai)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kozhevnikovai/tender-pomoshnik.git"
+  },
+  "homepage": "https://github.com/kozhevnikovai/tender-pomoshnik#readme",
+  "dependencies": {
+    "@fontsource/geologica": "^5.3.0",
+    "@fontsource/martian-mono": "^5.3.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@napi-rs/canvas": "^1.1.0",
+    "commander": "^15.1.0",
+    "docx": "^9.15.3",
+    "mammoth": "^1.13.0",
+    "node-llama-cpp": "^3.22.3",
+    "nodemailer": "^10.4.0",
+    "tesseract.js": "^7.0.0",
+    "unpdf": "^1.9.1",
+    "word-extractor": "^1.0.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/nodemailer": "^8.0.2",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "jszip": "^3.10.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

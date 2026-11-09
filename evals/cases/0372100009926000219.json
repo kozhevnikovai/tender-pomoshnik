@@ -1,0 +1,21 @@
+{
+  "reg": "0372100009926000219",
+  "title": "Запрос котировок в электронной форме №0372100009926000219",
+  "url": "https://zakupki.gov.ru/epz/order/notice/zk20/view/common-info.html?regNumber=0372100009926000219",
+  "expected": {
+    "law": "44-ФЗ",
+    "procedure": "котировки",
+    "noticeNumber": "0372100009926000219",
+    "nmck": 2981750,
+    "deadline": "2026-11-13T11:00",
+    "results": "2026-11-17",
+    "bidSecurity": 14908.75,
+    "contractSecurity": {
+      "value": 0.5,
+      "unit": "%"
+    },
+    "smpOnly": true,
+    "nationalBan": false
+  },
+  "manual": {}
+}

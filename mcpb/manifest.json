@@ -1,0 +1,41 @@
+{
+  "manifest_version": "0.2",
+  "name": "tender-pomoshnik",
+  "display_name": "Тендерный помощник — госзакупки 44-ФЗ и 223-ФЗ",
+  "version": "0.0.0",
+  "description": "Разбор закупки по номеру извещения: требования, сроки, обеспечение, антидемпинг, риски и черновики писем — с цитатами из документов и ссылками на закон.",
+  "long_description": "Попросите Claude: «Разбери закупку 0372200092126000031 и скажи, можем ли мы участвовать». Тендерный помощник скачает карточку и документы из открытой части ЕИС (или прочитает ваши файлы: PDF, DOCX, DOC, ZIP, сканы), найдёт требования, сроки, обеспечение и риски, посчитает антидемпинг и штрафы и сравнит закупку с профилем вашей компании. Каждое утверждение — с цитатой и страницей документа или с карточкой нормы закона; если подтверждения нет, ответ «проверить». Профиль компании хранится только на вашем компьютере. Помощник не подаёт заявки и не работает с ЭЦП. Это помощник, а не юридическая консультация.",
+  "author": { "name": "Egor Kozhevnikov", "url": "https://github.com/kozhevnikovai" },
+  "repository": { "type": "git", "url": "https://github.com/kozhevnikovai/tender-pomoshnik" },
+  "homepage": "https://github.com/kozhevnikovai/tender-pomoshnik",
+  "documentation": "https://github.com/kozhevnikovai/tender-pomoshnik#readme",
+  "support": "https://github.com/kozhevnikovai/tender-pomoshnik/issues",
+  "icon": "icon.png",
+  "license": "MIT",
+  "keywords": ["44-fz", "223-fz", "goszakupki", "tender", "eis", "russian", "procurement"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/cli.js",
+    "mcp_config": { "command": "node", "args": ["${__dirname}/dist/cli.js", "mcp"], "env": { "TENDER_OUT": "${user_config.output_dir}" } }
+  },
+  "tools": [
+    { "name": "analyze_tender", "description": "Разбор закупки по номеру извещения или файлам" },
+    { "name": "get_tender_text", "description": "Фрагменты документов закупки со страницами" },
+    { "name": "verify_quotes", "description": "Проверка цитат по документам" },
+    { "name": "law_lookup", "description": "Нормы 44-ФЗ и 223-ФЗ с редакциями и источниками" },
+    { "name": "calc_security", "description": "Обеспечение, антидемпинг, штраф" },
+    { "name": "check_application", "description": "Проверка характеристик заявки по ТЗ" },
+    { "name": "draft_letter", "description": "Черновик запроса на разъяснение или жалобы в ФАС" },
+    { "name": "company_profile", "description": "Профиль компании (локально)" },
+    { "name": "search_tenders", "description": "Поиск закупок в ЕИС" },
+    { "name": "contract_plan", "description": "План исполнения контракта" },
+    { "name": "list_tenders", "description": "Разобранные закупки" }
+  ],
+  "prompts": [
+    { "name": "tender_review", "description": "Разбор закупки и вердикт", "arguments": ["reg_number"], "text": "Разбери закупку ${arguments.reg_number} инструментом analyze_tender. Ответь по правилам из ответа инструмента: главное (НМЦК, срок подачи, обеспечение), можем ли участвовать и почему, риски с цитатами и нормами, что подготовить. Перед ответом проверь цитаты через verify_quotes." }
+  ],
+  "user_config": {
+    "output_dir": { "type": "directory", "title": "Папка для отчётов", "description": "Оставьте пустой — Документы/Тендерный помощник", "required": false, "default": "" }
+  },
+  "compatibility": { "platforms": ["win32", "darwin"], "runtimes": { "node": ">=20.0.0" } }
+}

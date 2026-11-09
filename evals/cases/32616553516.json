@@ -1,0 +1,20 @@
+{
+  "reg": "32616553516",
+  "title": "Конкурс в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства №32616553516",
+  "url": "https://zakupki.gov.ru/epz/order/notice/notice223/common-info.html?regNumber=32616553516",
+  "expected": {
+    "law": "223-ФЗ",
+    "procedure": "конкурс",
+    "noticeNumber": "32616553516",
+    "nmck": null,
+    "deadline": "2026-11-16T09:00",
+    "results": "2026-11-19",
+    "bidSecurity": null,
+    "contractSecurity": null,
+    "smpOnly": true,
+    "nationalBan": false
+  },
+  "manual": {
+    "nmck": 2981247
+  }
+}

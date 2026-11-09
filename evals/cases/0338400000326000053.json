@@ -1,0 +1,23 @@
+{
+  "reg": "0338400000326000053",
+  "title": "Электронный аукцион №0338400000326000053",
+  "url": "https://zakupki.gov.ru/epz/order/notice/ea20/view/common-info.html?regNumber=0338400000326000053",
+  "expected": {
+    "law": "44-ФЗ",
+    "procedure": "аукцион",
+    "noticeNumber": "0338400000326000053",
+    "nmck": 608686,
+    "deadline": "2026-11-17T11:00",
+    "results": "2026-11-18",
+    "bidSecurity": null,
+    "contractSecurity": {
+      "value": 30434.3,
+      "unit": "%"
+    },
+    "smpOnly": false,
+    "nationalBan": false
+  },
+  "manual": {
+    "payDays": "7 рабочих"
+  }
+}

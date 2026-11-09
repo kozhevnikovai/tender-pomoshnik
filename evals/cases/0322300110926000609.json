@@ -1,0 +1,20 @@
+{
+  "reg": "0322300110926000609",
+  "title": "Запрос котировок в электронной форме №0322300110926000609",
+  "url": "https://zakupki.gov.ru/epz/order/notice/zk20/view/common-info.html?regNumber=0322300110926000609",
+  "expected": {
+    "law": "44-ФЗ",
+    "procedure": "котировки",
+    "noticeNumber": "0322300110926000609",
+    "nmck": 98720,
+    "deadline": "2026-11-16T09:30",
+    "results": "2026-11-18",
+    "bidSecurity": null,
+    "contractSecurity": null,
+    "smpOnly": true,
+    "nationalBan": false
+  },
+  "manual": {
+    "finePct": 1
+  }
+}

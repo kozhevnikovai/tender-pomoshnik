@@ -1,0 +1,21 @@
+{
+  "reg": "0163200000326005666",
+  "title": "Запрос котировок в электронной форме №0163200000326005666",
+  "url": "https://zakupki.gov.ru/epz/order/notice/zk20/view/common-info.html?regNumber=0163200000326005666",
+  "expected": {
+    "law": "44-ФЗ",
+    "procedure": "котировки",
+    "noticeNumber": "0163200000326005666",
+    "nmck": 135066.45,
+    "deadline": "2026-11-13T09:00",
+    "results": "2026-11-17",
+    "bidSecurity": null,
+    "contractSecurity": null,
+    "smpOnly": true,
+    "nationalBan": true
+  },
+  "manual": {
+    "payDays": "7 рабочих",
+    "finePct": 1
+  }
+}

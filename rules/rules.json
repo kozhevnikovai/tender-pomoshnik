@@ -1,0 +1,656 @@
+{
+ "version": "2026.11.09",
+ "asOf": "2026-11-09",
+ "note": "Карточки норм для Тендерного помощника. Текст карточки — пересказ, не цитата закона. status: verified — подтверждено двумя и более источниками на дату asOf; check — один источник или расхождения, ответ помечается «проверить». Ссылки ведут на первоисточник (КонсультантПлюс, Гарант) или на разбор, где норма процитирована.",
+ "rules": [
+  {
+   "id": "44-44-1",
+   "act": "44-ФЗ",
+   "ref": "ч. 1 ст. 44",
+   "topic": "обеспечение заявки",
+   "title": "Когда обеспечение заявки обязательно",
+   "summary": "Если НМЦК больше 1 млн ₽, заказчик обязан потребовать обеспечение заявки. При НМЦК 1 млн ₽ и меньше — вправе не требовать.",
+   "params": {
+    "mandatoryAbove": 1000000
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/art/44-fz/obespechenie-zayavki-po-44-fz",
+    "https://ppt.ru/art/zakupki/kak-vernut-obespechenie-zayavki"
+   ]
+  },
+  {
+   "id": "44-44-2",
+   "act": "44-ФЗ",
+   "ref": "ч. 2 ст. 44",
+   "topic": "обеспечение заявки",
+   "title": "Размер обеспечения заявки",
+   "summary": "При НМЦК до 20 млн ₽ включительно — от 0,5% до 1% НМЦК; при НМЦК больше 20 млн ₽ — от 0,5% до 5% НМЦК. Учреждения не вносят обеспечение; предприятия УИС и организации инвалидов — 0,5% НМЦК.",
+   "params": {
+    "bands": [
+     {
+      "upTo": 20000000,
+      "min": 0.5,
+      "max": 1
+     },
+     {
+      "upTo": null,
+      "min": 0.5,
+      "max": 5
+     }
+    ]
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/art/44-fz/obespechenie-zayavki-po-44-fz",
+    "https://ppt.ru/art/zakupki/zapolnyaem-platezhku-na-vnesenie-obespecheniya",
+    "https://www.pro-ability.ru/tpost/xpgv870f91-statya-44-44-fz-v-2026-kak-rasschitat-vn"
+   ]
+  },
+  {
+   "id": "44-96-6",
+   "act": "44-ФЗ",
+   "ref": "ч. 6 ст. 96",
+   "topic": "обеспечение контракта",
+   "title": "Размер обеспечения исполнения контракта",
+   "summary": "Заказчик устанавливает обеспечение исполнения контракта от 0,5% до 30% НМЦК. Если предусмотрен аванс, обеспечение не может быть меньше аванса.",
+   "params": {
+    "min": 0.5,
+    "max": 30
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/art/zakupki/obespechenie-ispolneniya-kontrakta-po-44-fz",
+    "https://saby.ru/articles/tenders/obespechenie_kontrakta_44fz",
+    "https://www.pro-ability.ru/news_buh/tpost/t8aof60651-tsena-kontrakta-i-obespechenie-izmenyayu"
+   ]
+  },
+  {
+   "id": "44-96-6-base",
+   "act": "44-ФЗ",
+   "ref": "ч. 6 ст. 96",
+   "topic": "обеспечение контракта",
+   "title": "От какой цены считать обеспечение контракта",
+   "summary": "Процент обеспечения указан в извещении, а сумма рассчитывается от цены, по которой заключается контракт (предложенной победителем). Так же указано в карточках закупок ЕИС.",
+   "params": {},
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://zakupki.gov.ru/epz/order/notice/ea20/view/common-info.html?regNumber=0223100000626000202",
+    "https://www.pro-ability.ru/news_buh/tpost/t8aof60651-tsena-kontrakta-i-obespechenie-izmenyayu"
+   ]
+  },
+  {
+   "id": "44-96-2.2",
+   "act": "44-ФЗ",
+   "ref": "ч. 2.2 ст. 96",
+   "topic": "обеспечение контракта",
+   "title": "Обеспечение гарантийных обязательств",
+   "summary": "Обеспечение гарантийных обязательств не может превышать 10% НМЦК.",
+   "params": {
+    "max": 10
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://www.consultant.ru/law/podborki/procent_garantijnyh_obyazatelstv/",
+    "https://www.sostav.ru/blogs/287670/79769"
+   ]
+  },
+  {
+   "id": "44-96-8.1",
+   "act": "44-ФЗ",
+   "ref": "ч. 8.1 ст. 96",
+   "topic": "обеспечение контракта",
+   "title": "Освобождение СМП от обеспечения контракта",
+   "summary": "В закупке только для СМП и СОНКО (п. 1 ч. 1 ст. 30) победитель может быть освобождён от обеспечения исполнения контракта. Условие о подтверждении добросовестности — проверить по актуальной редакции.",
+   "params": {},
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://www.garant.ru/products/ipo/prime/doc/413891290/",
+    "https://ppt.ru/calc/obespechenie-ispolneniya"
+   ]
+  },
+  {
+   "id": "44-37-scope",
+   "act": "44-ФЗ",
+   "ref": "ст. 37",
+   "topic": "антидемпинг",
+   "title": "Когда включаются антидемпинговые меры",
+   "summary": "Антидемпинговые меры применяются в конкурсе и аукционе, если участник снизил цену на 25% и более от НМЦК. В запросе котировок и запросе предложений не применяются.",
+   "params": {
+    "threshold": 25,
+    "procedures": [
+     "аукцион",
+     "конкурс"
+    ]
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://toolfox.ru/blog/antidempingovye-mery-44-fz",
+    "https://spark.ru/user/274180/blog/376417/antidempingovie-meri-po-44-fz-chto-budet-pri-snizhenii-tseni-na-25-i-kak-rabotaet-porog-15-mln"
+   ]
+  },
+  {
+   "id": "44-37-1",
+   "act": "44-ФЗ",
+   "ref": "ч. 1 ст. 37",
+   "topic": "антидемпинг",
+   "title": "Антидемпинг при НМЦК больше 15 млн ₽",
+   "summary": "Контракт заключают только после обеспечения исполнения контракта в полуторном размере от указанного в извещении. Выбора нет.",
+   "params": {
+    "above": 15000000,
+    "factor": 1.5
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://spark.ru/user/274180/blog/376417/antidempingovie-meri-po-44-fz-chto-budet-pri-snizhenii-tseni-na-25-i-kak-rabotaet-porog-15-mln",
+    "https://toolfox.ru/blog/antidempingovye-mery-44-fz"
+   ]
+  },
+  {
+   "id": "44-37-2",
+   "act": "44-ФЗ",
+   "ref": "ч. 2 ст. 37",
+   "topic": "антидемпинг",
+   "title": "Антидемпинг при НМЦК 15 млн ₽ и меньше",
+   "summary": "Участник выбирает: полуторное обеспечение или обычное обеспечение плюс информация о добросовестности — три контракта, исполненных за последние 3 года без неустоек.",
+   "params": {
+    "upTo": 15000000,
+    "factor": 1.5,
+    "contracts": 3,
+    "years": 3
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://spark.ru/user/274180/blog/376417/antidempingovie-meri-po-44-fz-chto-budet-pri-snizhenii-tseni-na-25-i-kak-rabotaet-porog-15-mln",
+    "https://toolfox.ru/blog/antidempingovye-mery-44-fz"
+   ]
+  },
+  {
+   "id": "44-37-484",
+   "act": "44-ФЗ",
+   "ref": "ст. 37 (ред. 484-ФЗ)",
+   "topic": "антидемпинг",
+   "title": "Антидемпинг без требования обеспечения (с 2026 года)",
+   "summary": "С 01.01.2026: если в извещении нет требования обеспечения исполнения контракта, победитель с демпинговой ценой подтверждает добросовестность тремя контрактами за 3 года без взысканий.",
+   "params": {},
+   "validFrom": "2026-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://ppt.ru/obzory/obzor-izmeneniy-po-goszakupkam-chto-menyaetsya-v-zakupkakh-po-44-fz-i-223-fz"
+   ]
+  },
+  {
+   "id": "44-37-avans",
+   "act": "44-ФЗ",
+   "ref": "ст. 37",
+   "topic": "антидемпинг",
+   "title": "Аванс при антидемпинге",
+   "summary": "Участнику, к которому применены антидемпинговые меры, аванс не выплачивается.",
+   "params": {},
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://www.consultant.ru/law/podborki/antidempingovye_mery_44_fz/",
+    "https://toolfox.ru/blog/antidempingovye-mery-44-fz"
+   ]
+  },
+  {
+   "id": "44-42-3-auction",
+   "act": "44-ФЗ",
+   "ref": "п. 2 ч. 3 ст. 42",
+   "topic": "сроки",
+   "title": "Минимальный срок подачи заявок — электронный аукцион",
+   "summary": "Не менее 7 дней с даты размещения извещения, если НМЦК не больше 300 млн ₽ (2 млрд ₽ для строительства); иначе — не менее 15 дней.",
+   "params": {
+    "days": 7,
+    "bigDays": 15,
+    "big": 300000000,
+    "bigBuild": 2000000000
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/calc/srok-aukcziona",
+    "https://base.garant.ru/481116633/"
+   ]
+  },
+  {
+   "id": "44-42-3-contest",
+   "act": "44-ФЗ",
+   "ref": "п. 1 ч. 3 ст. 42",
+   "topic": "сроки",
+   "title": "Минимальный срок подачи заявок — электронный конкурс",
+   "summary": "Не менее 15 дней до окончания подачи заявок. Срок для крупных конкурсов — проверить.",
+   "params": {
+    "days": 15
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://spmag.ru/blanks/izveshenie-o-zakupke-po-44-fz"
+   ]
+  },
+  {
+   "id": "44-42-3-quote",
+   "act": "44-ФЗ",
+   "ref": "п. 3 ч. 3 ст. 42",
+   "topic": "сроки",
+   "title": "Минимальный срок подачи заявок — запрос котировок",
+   "summary": "Срок подачи заявок в электронном запросе котировок — проверить по тексту п. 3 ч. 3 ст. 42.",
+   "params": {},
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://www.consultant.ru/document/cons_doc_LAW_144624/"
+   ]
+  },
+  {
+   "id": "44-42-5",
+   "act": "44-ФЗ",
+   "ref": "ч. 5 ст. 42",
+   "topic": "разъяснения",
+   "title": "Запрос разъяснений положений извещения",
+   "summary": "Запрос можно направить не позднее чем за 3 дня до окончания срока подачи заявок; заказчик отвечает в течение 2 дней. Форма свободная.",
+   "params": {
+    "daysBefore": 3,
+    "answerDays": 2
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/art/zakupki/zapros-razyasneny-po-44fz",
+    "https://saby.ru/articles/tenders/zapros_na_razyasnenie_po_44_fz"
+   ]
+  },
+  {
+   "id": "44-105-2",
+   "act": "44-ФЗ",
+   "ref": "ч. 2 ст. 105",
+   "topic": "жалоба",
+   "title": "Сроки жалобы в ФАС по 44-ФЗ",
+   "summary": "На положения извещения — до окончания срока подачи заявок. На действия после окончания подачи заявок — не позднее 5 дней с даты размещения протокола подведения итогов. Проверить точные формулировки по ч. 2 ст. 105.",
+   "params": {
+    "afterProtocolDays": 5
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://vseadvokaty.ru/questions/administrativnoe-pravo/25962",
+    "https://saby.ru/articles/tenders/zhaloba_v_fas_na_zakazchika"
+   ]
+  },
+  {
+   "id": "44-34-13.1",
+   "act": "44-ФЗ",
+   "ref": "ч. 13.1 ст. 34",
+   "topic": "оплата",
+   "title": "Срок оплаты по контракту",
+   "summary": "Не более 7 рабочих дней с даты подписания документа о приёмке, если другой срок не установлен законодательством. При приёмке без ЕИС — не более 10 рабочих дней (ч. 7 ст. 94).",
+   "params": {
+    "workDays": 7
+   },
+   "validFrom": "2022-05-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://t-j.ru/kak-poluchit-peni-s-goszakazchika-za-prosrochku-oplaty/",
+    "https://ppt.ru/art/goskontrakt/chto-delat-esli-zakazchik-narushil-sroki-oplaty-po-kontraktu-44-fz",
+    "https://saby.ru/articles/tenders/oplata_kontrakta_po_44fz"
+   ]
+  },
+  {
+   "id": "44-34-7",
+   "act": "44-ФЗ",
+   "ref": "ч. 7 ст. 34",
+   "topic": "неустойка",
+   "title": "Пеня поставщика за просрочку",
+   "summary": "Пеня за каждый день просрочки — 1/300 ключевой ставки ЦБ на дату уплаты от цены контракта (этапа), уменьшенной на стоимость исполненного.",
+   "params": {
+    "fraction": 300
+   },
+   "validFrom": "2017-09-09",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/columns/goodwin/samaya-rasprostranennaya-oshibka-v-raschete-peni-po-44-fz",
+    "https://ppt.ru/art/zakupki/kakie-shtrafy-predusmotreny-dlya-postavshchikov-po-44-fz"
+   ]
+  },
+  {
+   "id": "1042-3",
+   "act": "ПП РФ № 1042",
+   "ref": "п. 3 Правил",
+   "topic": "неустойка",
+   "title": "Штраф поставщика за неисполнение обязательств",
+   "summary": "Цена контракта до 3 млн ₽ — 10%; от 3 до 50 млн ₽ — 5%; от 50 до 100 млн ₽ — 1%. Ставки для контрактов дороже 100 млн ₽ — проверить по п. 3 Правил.",
+   "params": {
+    "bands": [
+     {
+      "upTo": 3000000,
+      "pct": 10
+     },
+     {
+      "upTo": 50000000,
+      "pct": 5
+     },
+     {
+      "upTo": 100000000,
+      "pct": 1
+     }
+    ]
+   },
+   "validFrom": "2017-09-09",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://www.consultant.ru/document/cons_doc_LAW_154930/b75424d744804e0e0059cab1afe88fe5671bb649/",
+    "https://toolfox.ru/blog/postanovlenie-1042-shtrafy-44-fz"
+   ]
+  },
+  {
+   "id": "1042-4",
+   "act": "ПП РФ № 1042",
+   "ref": "п. 4 Правил",
+   "topic": "неустойка",
+   "title": "Штраф для СМП и СОНКО",
+   "summary": "Если контракт заключён по закупке только для СМП/СОНКО, штраф — 1% цены контракта, но не менее 1 000 ₽ и не более 5 000 ₽.",
+   "params": {
+    "pct": 1,
+    "min": 1000,
+    "max": 5000
+   },
+   "validFrom": "2017-09-09",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://toolfox.ru/blog/postanovlenie-1042-shtrafy-44-fz",
+    "https://www.pro-ability.ru/tpost/jfvmvfrc41-zakazchik-nepravomerno-ukazal-povishenni"
+   ]
+  },
+  {
+   "id": "1042-customer",
+   "act": "ПП РФ № 1042",
+   "ref": "Правила, штраф заказчика",
+   "topic": "неустойка",
+   "title": "Штраф заказчика",
+   "summary": "Штраф заказчика — фиксированная сумма: при цене контракта до 3 млн ₽ — 1 000 ₽, от 3 до 50 млн ₽ — 5 000 ₽.",
+   "params": {
+    "bands": [
+     {
+      "upTo": 3000000,
+      "sum": 1000
+     },
+     {
+      "upTo": 50000000,
+      "sum": 5000
+     }
+    ]
+   },
+   "validFrom": "2017-09-09",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/tender/shtrafy-dlya-organizatorov-goszakupok-v-2017-godu",
+    "https://toolfox.ru/blog/postanovlenie-1042-shtrafy-44-fz"
+   ]
+  },
+  {
+   "id": "44-30-1",
+   "act": "44-ФЗ",
+   "ref": "п. 1 ч. 1 ст. 30",
+   "topic": "СМП",
+   "title": "Закупка только для СМП и СОНКО",
+   "summary": "Если закупка проводится только среди субъектов малого предпринимательства и СОНКО, участник должен относиться к ним (реестр МСП) и задекларировать это в заявке.",
+   "params": {},
+   "validFrom": "2014-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://www.garant.ru/products/ipo/prime/doc/413891290/",
+    "https://ppt.ru/art/zakupki/zapolnyaem-platezhku-na-vnesenie-obespecheniya"
+   ]
+  },
+  {
+   "id": "44-31",
+   "act": "44-ФЗ",
+   "ref": "ст. 31",
+   "topic": "требования к участнику",
+   "title": "Требования к участникам",
+   "summary": "Единые требования (в т. ч. лицензии и членство в СРО, если они нужны по закону для объекта закупки), дополнительные требования по решению Правительства и отсутствие в РНП. Состав для конкретной закупки — в извещении.",
+   "params": {},
+   "validFrom": "2014-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://ppt.ru/art/44-fz/izveshchenie-o-zakupke-po-zakonu-44-fz-kak-sostavit-i-chto-uchest",
+    "https://fas.gov.ru/news/33063/export_to_file.pdf"
+   ]
+  },
+  {
+   "id": "44-33-1-1",
+   "act": "44-ФЗ",
+   "ref": "п. 1 ч. 1 ст. 33",
+   "topic": "описание объекта",
+   "title": "Товарный знак без «или эквивалент»",
+   "summary": "Описание объекта закупки не должно ограничивать конкуренцию; указание товарного знака без слов «или эквивалент» допустимо только в исключительных случаях. Проверить по тексту ст. 33.",
+   "params": {},
+   "validFrom": "2014-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://www.consultant.ru/document/cons_doc_LAW_465026/cdd3fd6a6519d6d3c95105efcb0d4075aaa5367a/"
+   ]
+  },
+  {
+   "id": "44-138",
+   "act": "44-ФЗ",
+   "ref": "ред. 138-ФЗ",
+   "topic": "заявка",
+   "title": "Недостоверные сведения в заявке",
+   "summary": "С 01.01.2026 комиссия обязана отстранить участника, если выявлены недостоверные сведения, а если позже — заказчик отказывается заключать контракт. Ответственность за достоверность — на участнике.",
+   "params": {},
+   "validFrom": "2026-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/obzory/obzor-izmeneniy-po-goszakupkam-chto-menyaetsya-v-zakupkakh-po-44-fz-i-223-fz",
+    "https://journals.bsu.ru/content/articles/5307.pdf"
+   ]
+  },
+  {
+   "id": "44-43",
+   "act": "44-ФЗ",
+   "ref": "ст. 43",
+   "topic": "заявка",
+   "title": "Состав заявки",
+   "summary": "Заявка содержит предложение участника о товаре (характеристики, страна происхождения), сведения и декларации об участнике, документы о соответствии требованиям. Точный состав — в извещении в разделе требований к содержанию заявки.",
+   "params": {},
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://www.pro-ability.ru/tpost/c8ngm2byz1-zakazchik-pri-formirovanii-instruktsii-n?amp=true",
+    "https://ppt.ru/art/44-fz/izveshchenie-o-zakupke-po-zakonu-44-fz-kak-sostavit-i-chto-uchest"
+   ]
+  },
+  {
+   "id": "44-51-1",
+   "act": "44-ФЗ",
+   "ref": "ч. 1 ст. 51",
+   "topic": "сроки",
+   "title": "Заключение контракта",
+   "summary": "Контракт по результатам электронной процедуры заключается не ранее чем через 10 дней с даты размещения протокола подведения итогов. Проверить исключения.",
+   "params": {
+    "days": 10
+   },
+   "validFrom": "2022-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://www.pro-ability.ru/tpost/sx2c9trsc1-sroki-razmescheniya-kontraktov-po-44-fz"
+   ]
+  },
+  {
+   "id": "1875-mech",
+   "act": "ПП РФ № 1875",
+   "ref": "п. 1–3, приложения 1–3",
+   "topic": "нацрежим",
+   "title": "Национальный режим: запрет, ограничение, преимущество",
+   "summary": "Три механизма: запрет на иностранные товары (приложение 1), ограничение допуска (приложение 2), преимущество — при оценке к цене иностранного товара или российского без подтверждения прибавляют 15%. Применяется к 44-ФЗ и 223-ФЗ.",
+   "params": {
+    "preferencePct": 15
+   },
+   "validFrom": "2025-01-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://www.pro-ability.ru/tpost/a8dik4vc41-natsionalnii-rezhim-po-pp-rf-1875-v-2026?amp=true",
+    "https://www.pro-ability.ru/tpost/oj17fh40l1-postanovlenie-1875-v-2026-godu-perechni"
+   ]
+  },
+  {
+   "id": "1875-proof",
+   "act": "ПП РФ № 1875",
+   "ref": "п. 3",
+   "topic": "нацрежим",
+   "title": "Как подтвердить российское происхождение",
+   "summary": "Промышленный товар — номер действующей реестровой записи из реестра российской промышленной продукции; ПО (позиция 146 приложения 1) — номер записи из реестра российского ПО (с 01.03.2026). До 30.11.2026 допускаются записи без указания баллов. Перечни меняются часто — проверить редакцию на дату извещения.",
+   "params": {},
+   "validFrom": "2026-03-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://companies.rbc.ru/news/zkRiuQlQiU/izmeneniya-v-pp-1875-s-marta-2026-zatronut-reestr-719-i-goszakupki/",
+    "https://www.pro-ability.ru/tpost/oj17fh40l1-postanovlenie-1875-v-2026-godu-perechni"
+   ]
+  },
+  {
+   "id": "1875-changes-2026",
+   "act": "ПП РФ № 1875",
+   "ref": "изменения 2026",
+   "topic": "нацрежим",
+   "title": "Изменения нацрежима в 2026 году",
+   "summary": "ПП № 969 от 03.08.2026 (лекарства, с 06.08.2026), ПП № 1201 от 21.09.2026; с 03.07.2026 сокращён перечень товаров, которые можно закупать до 300 тыс. ₽ без запрета; 23.10.2026 опубликован проект новых изменений. Для закупки сверяйте редакцию на дату извещения.",
+   "params": {},
+   "validFrom": "2026-07-03",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://ppt.ru/art/naczionalnyj-rezhim/natsrezhim-i-preimushchestva-dlya-stran-iz-yeaes-chto-menyaetsya",
+    "https://www.kontur-extern.ru/info/normativ/document/1/508475-postanovlenie-pravitelstva-rf-ot-21-09-2026-n-1201",
+    "https://ppt.ru/amp/news/naczionalnyj-rezhim/skorrektirovany-pravila-natsionalnogo-rezhima-v-zakupkakh-postanovlenie-prinyato",
+    "https://ppt.ru/columns/kontraktnyj-centr-goz/lazeek-v-natsionalnom-rezhime-stanet-menshe-chto-izmenit-novoe-postanovlenie"
+   ]
+  },
+  {
+   "id": "44-reestr-2026",
+   "act": "44-ФЗ",
+   "ref": "ред. 484-ФЗ",
+   "topic": "реестр контрактов",
+   "title": "Реестр контрактов с 01.07.2026",
+   "summary": "С 01.07.2026 в реестр контрактов ЕИС вносятся сведения о любых сделках, включая малые закупки (кроме сведений с гостайной по неэлектронным малым закупкам).",
+   "params": {},
+   "validFrom": "2026-07-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/obzory/obzor-izmeneniy-po-goszakupkam-chto-menyaetsya-v-zakupkakh-po-44-fz-i-223-fz",
+    "https://www.garant.ru/ia/aggregator/eis/"
+   ]
+  },
+  {
+   "id": "223-3.2-3",
+   "act": "223-ФЗ",
+   "ref": "ч. 3 ст. 3.2",
+   "topic": "разъяснения",
+   "title": "Запрос разъяснений по 223-ФЗ",
+   "summary": "Заказчик отвечает в течение 3 рабочих дней через ЕИС; вправе не отвечать, если запрос поступил позднее чем за 3 рабочих дня до окончания подачи заявок.",
+   "params": {
+    "workDaysBefore": 3,
+    "answerWorkDays": 3
+   },
+   "validFrom": "2018-07-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://ppt.ru/art/zakupki/kak-razyasnit-dokumentatsiyu-po-223-fz-v-2018-godu",
+    "https://gkgz.ru/wp-content/uploads/2024/10/Belyaeva_O_A_Zapros_razyasnenij_223_FZ_TSivilist-2024.pdf"
+   ]
+  },
+  {
+   "id": "223-18.1",
+   "act": "135-ФЗ",
+   "ref": "ч. 4, 5 ст. 18.1 (ч. 10 ст. 3 223-ФЗ)",
+   "topic": "жалоба",
+   "title": "Жалоба в ФАС по 223-ФЗ",
+   "summary": "Не позднее 10 дней со дня подведения итогов (или размещения результатов); общий предел — 3 месяца. ФАС рассматривает жалобу 7 рабочих дней.",
+   "params": {
+    "days": 10
+   },
+   "validFrom": "2018-07-01",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://consultant.ru/document/cons_doc_LAW_545398",
+    "https://ppt.ru/news/223-fz/itogi-zakupki-po-223-fz-mozhno-obzhalovat-dazhe-pri-narushennom-moratorii",
+    "https://www.garant.ru/news/1248985/"
+   ]
+  },
+  {
+   "id": "223-polozhenie",
+   "act": "223-ФЗ",
+   "ref": "ст. 2, ст. 3.2",
+   "topic": "общие",
+   "title": "Положение о закупке заказчика",
+   "summary": "По 223-ФЗ размеры обеспечения, антидемпинг, сроки и неустойки во многом задаёт положение о закупке конкретного заказчика (размещено в ЕИС). Расчёты по 44-ФЗ к 223-ФЗ напрямую не применяются — проверить положение.",
+   "params": {},
+   "validFrom": "2018-07-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://ppt.ru/art/223-fz/reforma-zakupok-po-223-fz-novye-zakony-i-tendentsii",
+    "https://saby.ru/articles/tenders/izmeneniya_v_zakupkah"
+   ]
+  },
+  {
+   "id": "223-3.1-4",
+   "act": "223-ФЗ",
+   "ref": "ст. 3.1-4",
+   "topic": "нацрежим",
+   "title": "Нацрежим в 223-ФЗ",
+   "summary": "С 2025 года запреты и ограничения на иностранные товары едины для 44-ФЗ и 223-ФЗ; порядок для 223-ФЗ — в ст. 3.1-4 и ПП № 1875.",
+   "params": {},
+   "validFrom": "2025-01-01",
+   "validTo": null,
+   "status": "check",
+   "sources": [
+    "https://saby.ru/articles/tenders/izmeneniya_v_zakupkah_2024"
+   ]
+  }
+ ]
+}

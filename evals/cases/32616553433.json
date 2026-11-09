@@ -1,0 +1,18 @@
+{
+  "reg": "32616553433",
+  "title": "Иной способ №32616553433",
+  "url": "https://zakupki.gov.ru/epz/order/notice/notice223/common-info.html?regNumber=32616553433",
+  "expected": {
+    "law": "223-ФЗ",
+    "procedure": "иное",
+    "noticeNumber": "32616553433",
+    "nmck": null,
+    "deadline": "2026-11-09T18:00",
+    "results": "2026-11-10",
+    "bidSecurity": null,
+    "contractSecurity": null,
+    "smpOnly": false,
+    "nationalBan": false
+  },
+  "manual": {}
+}

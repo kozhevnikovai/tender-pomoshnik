@@ -1,0 +1,26 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix: { os: [ubuntu-latest, windows-latest, macos-latest] }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - name: База норм — у каждой нормы источник и редакция
+        run: npm run rules:check
+      - name: CLI — расчёт по 44-ФЗ
+        run: node dist/cli.js calc --nmck 12000000 --price 8500000 --bid 1 --security 10
+      # самопроверка приложения: окно, фоновый обработчик, разбор документов, отчёт
+      - name: Приложение (Electron) — самопроверка
+        shell: bash
+        run: |
+          export TENDER_HOME="$RUNNER_TEMP/th" TENDER_OUT="$RUNNER_TEMP/out" TENDER_SMOKE="$PWD/test/fixtures/contract.txt;$PWD/test/fixtures/tz.txt" TENDER_SMOKE_OUT="$RUNNER_TEMP"
+          if [ "$RUNNER_OS" = "Linux" ]; then xvfb-run -a npx electron --no-sandbox app/main.mjs; else npx electron app/main.mjs; fi

@@ -1,0 +1,23 @@
+{
+  "reg": "0891200000626011227",
+  "title": "Запрос котировок в электронной форме №0891200000626011227",
+  "url": "https://zakupki.gov.ru/epz/order/notice/zk20/view/common-info.html?regNumber=0891200000626011227",
+  "expected": {
+    "law": "44-ФЗ",
+    "procedure": "котировки",
+    "noticeNumber": "0891200000626011227",
+    "nmck": 44346.1,
+    "deadline": "2026-11-16T07:00",
+    "results": "2026-11-18",
+    "bidSecurity": 221.73,
+    "contractSecurity": {
+      "value": 2217.31,
+      "unit": "%"
+    },
+    "smpOnly": false,
+    "nationalBan": false
+  },
+  "manual": {
+    "finePct": 1
+  }
+}

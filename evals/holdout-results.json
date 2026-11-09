@@ -1,0 +1,360 @@
+{
+  "score": {
+    "номер:law": {
+      "ok": 13,
+      "n": 13
+    },
+    "номер:procedure": {
+      "ok": 13,
+      "n": 13
+    },
+    "номер:noticeNumber": {
+      "ok": 13,
+      "n": 13
+    },
+    "номер:nmck": {
+      "ok": 10,
+      "n": 10
+    },
+    "номер:deadline": {
+      "ok": 13,
+      "n": 13
+    },
+    "номер:results": {
+      "ok": 13,
+      "n": 13
+    },
+    "номер:bidSecurity": {
+      "ok": 5,
+      "n": 5
+    },
+    "номер:contractSecurity": {
+      "ok": 9,
+      "n": 9
+    },
+    "номер:smpOnly": {
+      "ok": 13,
+      "n": 13
+    },
+    "номер:nationalBan": {
+      "ok": 3,
+      "n": 3
+    },
+    "файлы:law": {
+      "ok": 12,
+      "n": 13
+    },
+    "файлы:procedure": {
+      "ok": 6,
+      "n": 13
+    },
+    "файлы:nmck": {
+      "ok": 3,
+      "n": 10
+    },
+    "файлы:deadline": {
+      "ok": 0,
+      "n": 13
+    },
+    "файлы:results": {
+      "ok": 2,
+      "n": 13
+    },
+    "файлы:bidSecurity": {
+      "ok": 0,
+      "n": 5
+    },
+    "файлы:contractSecurity": {
+      "ok": 2,
+      "n": 9
+    },
+    "файлы:smpOnly": {
+      "ok": 9,
+      "n": 13
+    },
+    "файлы:nationalBan": {
+      "ok": 2,
+      "n": 3
+    }
+  },
+  "quotes": {
+    "ok": 329,
+    "total": 329
+  },
+  "rows": [
+    {
+      "reg": "0138600003126000083",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "fast-delivery",
+        "no-advance"
+      ],
+      "reqs": 0
+    },
+    {
+      "reg": "0138600003126000083",
+      "mode": "файлы",
+      "fails": [
+        "procedure",
+        "nmck",
+        "deadline",
+        "results",
+        "bidSecurity",
+        "contractSecurity",
+        "smpOnly",
+        "nationalBan"
+      ],
+      "risks": [
+        "fast-delivery"
+      ],
+      "reqs": 0
+    },
+    {
+      "reg": "0188300005426000193",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "contract-security-high"
+      ],
+      "reqs": 3
+    },
+    {
+      "reg": "0188300005426000193",
+      "mode": "файлы",
+      "fails": [
+        "nmck",
+        "deadline",
+        "bidSecurity"
+      ],
+      "risks": [
+        "contract-security-high"
+      ],
+      "reqs": 3
+    },
+    {
+      "reg": "0261000000126000042",
+      "mode": "номер",
+      "fails": [],
+      "risks": [],
+      "reqs": 4
+    },
+    {
+      "reg": "0261000000126000042",
+      "mode": "файлы",
+      "fails": [
+        "nmck",
+        "deadline"
+      ],
+      "risks": [],
+      "reqs": 4
+    },
+    {
+      "reg": "0318300406426000144",
+      "mode": "номер",
+      "fails": [],
+      "risks": [],
+      "reqs": 46
+    },
+    {
+      "reg": "0318300406426000144",
+      "mode": "файлы",
+      "fails": [
+        "procedure",
+        "nmck",
+        "deadline",
+        "results",
+        "contractSecurity"
+      ],
+      "risks": [],
+      "reqs": 46
+    },
+    {
+      "reg": "0332300301426000051",
+      "mode": "номер",
+      "fails": [],
+      "risks": [],
+      "reqs": 0
+    },
+    {
+      "reg": "0332300301426000051",
+      "mode": "файлы",
+      "fails": [
+        "deadline",
+        "results",
+        "contractSecurity"
+      ],
+      "risks": [],
+      "reqs": 0
+    },
+    {
+      "reg": "0335200014926004383",
+      "mode": "номер",
+      "fails": [],
+      "risks": [],
+      "reqs": 5
+    },
+    {
+      "reg": "0335200014926004383",
+      "mode": "файлы",
+      "fails": [
+        "deadline",
+        "results"
+      ],
+      "risks": [],
+      "reqs": 5
+    },
+    {
+      "reg": "0338200009826000798",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "no-advance"
+      ],
+      "reqs": 6
+    },
+    {
+      "reg": "0338200009826000798",
+      "mode": "файлы",
+      "fails": [
+        "procedure",
+        "nmck",
+        "deadline",
+        "results",
+        "bidSecurity",
+        "contractSecurity"
+      ],
+      "risks": [],
+      "reqs": 6
+    },
+    {
+      "reg": "0348500004426000137",
+      "mode": "номер",
+      "fails": [],
+      "risks": [],
+      "reqs": 52
+    },
+    {
+      "reg": "0348500004426000137",
+      "mode": "файлы",
+      "fails": [
+        "procedure",
+        "deadline",
+        "results",
+        "bidSecurity",
+        "contractSecurity"
+      ],
+      "risks": [],
+      "reqs": 52
+    },
+    {
+      "reg": "0371300134526000022",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "contract-security-high"
+      ],
+      "reqs": 21
+    },
+    {
+      "reg": "0371300134526000022",
+      "mode": "файлы",
+      "fails": [
+        "procedure",
+        "nmck",
+        "deadline",
+        "results",
+        "contractSecurity",
+        "smpOnly"
+      ],
+      "risks": [],
+      "reqs": 21
+    },
+    {
+      "reg": "0829500001126007366",
+      "mode": "номер",
+      "fails": [],
+      "risks": [],
+      "reqs": 28
+    },
+    {
+      "reg": "0829500001126007366",
+      "mode": "файлы",
+      "fails": [
+        "deadline",
+        "results"
+      ],
+      "risks": [],
+      "reqs": 28
+    },
+    {
+      "reg": "0891200000626011286",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "no-advance"
+      ],
+      "reqs": 6
+    },
+    {
+      "reg": "0891200000626011286",
+      "mode": "файлы",
+      "fails": [
+        "procedure",
+        "nmck",
+        "deadline",
+        "results",
+        "bidSecurity",
+        "contractSecurity",
+        "smpOnly"
+      ],
+      "risks": [],
+      "reqs": 6
+    },
+    {
+      "reg": "32616553430",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "fast-delivery",
+        "223-polozhenie"
+      ],
+      "reqs": 0
+    },
+    {
+      "reg": "32616553430",
+      "mode": "файлы",
+      "fails": [
+        "deadline",
+        "results",
+        "smpOnly"
+      ],
+      "risks": [
+        "fast-delivery",
+        "223-polozhenie"
+      ],
+      "reqs": 0
+    },
+    {
+      "reg": "32616553539",
+      "mode": "номер",
+      "fails": [],
+      "risks": [
+        "223-polozhenie"
+      ],
+      "reqs": 0
+    },
+    {
+      "reg": "32616553539",
+      "mode": "файлы",
+      "fails": [
+        "law",
+        "procedure",
+        "deadline",
+        "results"
+      ],
+      "risks": [],
+      "reqs": 0
+    }
+  ]
+}

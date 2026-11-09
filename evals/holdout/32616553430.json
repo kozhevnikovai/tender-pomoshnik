@@ -1,0 +1,18 @@
+{
+  "reg": "32616553430",
+  "title": "Запрос котировок в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства №32616553430",
+  "url": "https://zakupki.gov.ru/epz/order/notice/notice223/common-info.html?regNumber=32616553430",
+  "expected": {
+    "law": "223-ФЗ",
+    "procedure": "котировки",
+    "noticeNumber": "32616553430",
+    "nmck": null,
+    "deadline": "2026-11-16T09:00",
+    "results": "2026-11-16",
+    "bidSecurity": null,
+    "contractSecurity": null,
+    "smpOnly": true,
+    "nationalBan": false
+  },
+  "manual": {}
+}

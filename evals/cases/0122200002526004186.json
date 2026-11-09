@@ -1,0 +1,23 @@
+{
+  "reg": "0122200002526004186",
+  "title": "Электронный аукцион №0122200002526004186",
+  "url": "https://zakupki.gov.ru/epz/order/notice/ea20/view/common-info.html?regNumber=0122200002526004186",
+  "expected": {
+    "law": "44-ФЗ",
+    "procedure": "аукцион",
+    "noticeNumber": "0122200002526004186",
+    "nmck": 1704707.11,
+    "deadline": "2026-11-18T08:00",
+    "results": "2026-11-20",
+    "bidSecurity": 8523.54,
+    "contractSecurity": {
+      "value": 5,
+      "unit": "%"
+    },
+    "smpOnly": true,
+    "nationalBan": true
+  },
+  "manual": {
+    "payDays": "7"
+  }
+}

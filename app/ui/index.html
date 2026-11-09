@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; img-src 'self' file: data:; style-src 'self' 'unsafe-inline' file:; frame-src file:; script-src 'self'">
+<title>Тендерный помощник</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<aside>
+  <div class="brand"><img src="icon.png" width="36" height="36" alt=""><div><b>Тендерный помощник</b><span class="mono">№ 004 · kozhevnikovai</span></div></div>
+  <nav>
+    <button data-tab="tender" class="on"><span class="mono">01</span>Закупка</button>
+    <button data-tab="profile"><span class="mono">02</span>Профиль компании</button>
+    <button data-tab="monitor"><span class="mono">03</span>Мониторинг</button>
+    <button data-tab="archive"><span class="mono">04</span>Архив</button>
+    <button data-tab="settings"><span class="mono">05</span>Настройки</button>
+  </nav>
+  <div class="net" id="net"><i></i><span>Документы компании — на компьютере</span><small id="netInfo" class="mono">в облако: 0 байт</small></div>
+</aside>
+<main>
+  <section id="tab-tender">
+    <div class="kicker">44-ФЗ · 223-ФЗ</div>
+    <h1>Разбор закупки</h1>
+    <p class="lead">Введите номер извещения — помощник скачает карточку и документы из открытой части ЕИС. Или перетащите файлы: PDF, DOCX, DOC, ZIP, сканы.</p>
+    <div class="panel">
+      <label for="reg">Номер извещения (19 цифр — 44-ФЗ, 11 цифр — 223-ФЗ)</label>
+      <input type="text" id="reg" class="mono" placeholder="0372200092126000031" inputmode="numeric">
+      <div class="drop" id="drop">или перетащите документы сюда · <button class="ghost" id="pick">Выбрать файлы</button></div>
+      <div class="files" id="files"></div>
+      <div class="row"><button class="primary big" id="go">Разобрать</button><label class="inline"><input type="checkbox" id="ocr" checked> распознавать сканы</label></div>
+      <div class="progress" id="progress"></div><div class="err" id="err"></div>
+    </div>
+    <div id="result" class="hidden">
+      <div class="row wrap">
+        <button class="ghost" data-open="html">Открыть отчёт</button><button class="ghost" data-open="dir">Папка</button>
+        <button class="ghost" data-open="ics">Сроки в календарь</button><button class="ghost" data-open="clarification">Черновик запроса</button><button class="ghost" data-open="complaint">Черновик жалобы</button>
+        <button class="ghost" data-send="telegram">В Telegram</button><button class="ghost" data-send="bitrix24">В Битрикс24</button>
+      </div>
+      <iframe id="report" title="Отчёт"></iframe>
+    </div>
+    <p class="disc">Это помощник, а не юридическая консультация. Финальное решение и проверка — за вами. Помощник никогда не подаёт заявки, не подписывает документы и не работает с ЭЦП и паролями площадок.</p>
+  </section>
+
+  <section id="tab-profile" class="hidden">
+    <div class="kicker">Хранится только на этом компьютере</div>
+    <h1>Профиль компании</h1>
+    <p class="lead small">По профилю помощник отвечает «можем / нельзя / нужно» по каждой закупке.</p>
+    <div class="panel">
+      <div class="grid2">
+        <div><label>Название</label><input type="text" id="p-name"></div>
+        <div><label>ИНН</label><input type="text" id="p-inn" class="mono"></div>
+        <div><label>ОКВЭД (через запятую)</label><input type="text" id="p-okved" class="mono" placeholder="47.62, 46.49"></div>
+        <div><label>Регионы поставки (через запятую)</label><input type="text" id="p-regions"></div>
+        <div><label>Сколько можно заморозить под обеспечение, ₽</label><input type="number" id="p-sec"></div>
+        <div><label>&nbsp;</label><label class="inline"><input type="checkbox" id="p-msp"> в реестре МСП</label></div>
+      </div>
+      <label>Лицензии (по строке)</label><textarea id="p-lic"></textarea>
+      <label>СРО (по строке)</label><textarea id="p-sro"></textarea>
+      <label>Исполненные контракты: цена; дата окончания ГГГГ-ММ-ДД; были ли неустойки (да/нет); предмет</label><textarea id="p-contracts" class="mono" placeholder="450000; 2026-03-15; нет; канцтовары"></textarea>
+      <label>Товары: название; страна; номер реестровой записи</label><textarea id="p-products" class="mono" placeholder="Бумага А4; Россия; 10123456/2026"></textarea>
+      <div class="row"><button class="primary" id="p-save">Сохранить</button><span class="progress" id="p-msg"></span></div>
+    </div>
+  </section>
+
+  <section id="tab-monitor" class="hidden">
+    <div class="kicker">Официальный RSS ЕИС</div>
+    <h1>Мониторинг закупок</h1>
+    <p class="lead small">Новые закупки на этапе подачи заявок по вашим словам. Уведомления — в Telegram и на почту (настройки). Работает, пока включён компьютер.</p>
+    <div class="panel">
+      <div class="grid2">
+        <div><label>Слова</label><input type="text" id="m-text" placeholder="канцелярские товары"></div>
+        <div><label>Минус-слова (через запятую)</label><input type="text" id="m-minus" placeholder="ремонт, аренда"></div>
+        <div><label>Цена от, ₽</label><input type="number" id="m-from"></div><div><label>Цена до, ₽</label><input type="number" id="m-to"></div>
+      </div>
+      <div class="row"><button class="ghost" id="m-add">Добавить запрос</button><button class="primary" id="m-run">Проверить сейчас</button><label class="inline"><input type="checkbox" id="m-notify"> отправить уведомления</label></div>
+      <div class="list" id="m-queries"></div>
+      <div class="progress" id="m-msg"></div>
+      <div class="list" id="m-found"></div>
+    </div>
+  </section>
+
+  <section id="tab-archive" class="hidden">
+    <div class="kicker">Разобранные закупки</div><h1>Архив</h1>
+    <div class="list" id="archive"></div>
+  </section>
+
+  <section id="tab-settings" class="hidden">
+    <div class="kicker">Настройки</div><h1>Настройки</h1>
+    <div class="panel">
+      <label class="inline"><input type="checkbox" id="s-offline"> Строгий офлайн: без ЕИС, интеграций и облака</label>
+      <label>Языковая модель (нужна для мониторинга с ИИ-отсевом и вопросов)</label>
+      <select id="s-provider"><option value="local">Локальная (Qwen3, на этом компьютере)</option><option value="claude">Claude — свой ключ API (текст закупки маскируется)</option><option value="openai">OpenAI-совместимый API</option></select>
+      <div class="grid2"><div><label>Ключ API</label><input type="password" id="s-key"></div><div><label>Модель / адрес API</label><input type="text" id="s-model" placeholder="claude-sonnet-5-5"></div></div>
+      <div class="row"><button class="ghost" id="s-models">Скачать модели (OCR, Qwen3 4B)</button><button class="ghost" id="s-models8">+ Qwen3 8B для видеокарты</button></div>
+      <h2><span class="n">02</span>Уведомления и интеграции</h2>
+      <div class="grid2">
+        <div><label>Telegram: токен бота</label><input type="password" id="s-tg-token"></div><div><label>Telegram: chat id</label><input type="text" id="s-tg-chat" class="mono"></div>
+        <div><label>Битрикс24: входящий вебхук</label><input type="password" id="s-b24"></div><div><label>Почта (SMTP): хост:порт</label><input type="text" id="s-smtp" placeholder="smtp.yandex.ru:465"></div>
+        <div><label>Почта: логин</label><input type="text" id="s-mail-user"></div><div><label>Почта: пароль приложения</label><input type="password" id="s-mail-pass"></div>
+        <div><label>Почта: кому</label><input type="text" id="s-mail-to"></div><div><label>Папка для отчётов</label><input type="text" id="s-out"></div>
+      </div>
+      <div class="row"><button class="primary" id="s-save">Сохранить</button><span class="progress" id="s-msg"></span></div>
+      <p class="disc" id="s-about"></p>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body></html>

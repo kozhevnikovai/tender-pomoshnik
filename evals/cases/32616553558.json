@@ -1,0 +1,20 @@
+{
+  "reg": "32616553558",
+  "title": "Запрос предложений в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства №32616553558",
+  "url": "https://zakupki.gov.ru/epz/order/notice/notice223/common-info.html?regNumber=32616553558",
+  "expected": {
+    "law": "223-ФЗ",
+    "procedure": "запрос предложений",
+    "noticeNumber": "32616553558",
+    "nmck": null,
+    "deadline": "2026-11-18T08:00",
+    "results": "2026-11-24",
+    "bidSecurity": null,
+    "contractSecurity": null,
+    "smpOnly": true,
+    "nationalBan": false
+  },
+  "manual": {
+    "nmck": 4620000
+  }
+}
