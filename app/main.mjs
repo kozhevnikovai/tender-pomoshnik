@@ -2,7 +2,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell, utilityProcess } from "electron";
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -58,11 +58,11 @@ async function smoke(files) {
   try {
     await new Promise(r => win.webContents.once("did-finish-load", r));
     const st = await call("status", {});
-    const r = await call("analyze", { files: files.split(";"), ocr: false });
+    const r = await call("analyze", { files: files.split(";").map(f => resolve(f)), ocr: false });
     await win.webContents.executeJavaScript(`window.showReport && window.showReport(${JSON.stringify(r)})`);
     await new Promise(r => setTimeout(r, 1500));
-    const png = await win.webContents.capturePage();
-    writeFileSync(join(process.env.TENDER_SMOKE_OUT ?? tmpdir(), "smoke.png"), png.toPNG());
+    // скриншот — по возможности (на серверах без видеокарты захват окна бывает недоступен)
+    try { const png = await win.webContents.capturePage(); writeFileSync(join(process.env.TENDER_SMOKE_OUT ?? tmpdir(), "smoke.png"), png.toPNG()); } catch (e) { console.log("скриншот недоступен:", e.message); }
     console.log("SMOKE OK", JSON.stringify({ version: st.version, rules: st.rules, risks: r.report.risks.length, fields: r.report.fields.filter(f => f.value != null).length }));
     app.exit(0);
   } catch (e) { fail(e); }

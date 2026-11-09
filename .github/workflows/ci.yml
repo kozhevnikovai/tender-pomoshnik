@@ -22,5 +22,5 @@ jobs:
       - name: Приложение (Electron) — самопроверка
         shell: bash
         run: |
-          export TENDER_HOME="$RUNNER_TEMP/th" TENDER_OUT="$RUNNER_TEMP/out" TENDER_SMOKE="$PWD/test/fixtures/contract.txt;$PWD/test/fixtures/tz.txt" TENDER_SMOKE_OUT="$RUNNER_TEMP"
+          export TENDER_HOME="$RUNNER_TEMP/th" TENDER_OUT="$RUNNER_TEMP/out" TENDER_SMOKE="test/fixtures/contract.txt;test/fixtures/tz.txt" TENDER_SMOKE_OUT="$RUNNER_TEMP"
           if [ "$RUNNER_OS" = "Linux" ]; then xvfb-run -a npx electron --no-sandbox app/main.mjs; else npx electron app/main.mjs; fi
