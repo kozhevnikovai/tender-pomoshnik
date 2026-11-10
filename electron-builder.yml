@@ -7,13 +7,13 @@ extraMetadata:
   main: app/main.mjs
 directories:
   output: release
-  buildResources: app/build
+  buildResources: app/assets
 npmRebuild: false
 files:
   - dist/**
   - rules/**
   - app/**
-  - "!app/build/**"
+  - "!app/assets/**"
   - package.json
   - "!**/*.map"
   - "!node_modules/@node-llama-cpp/*cuda*/**"
@@ -24,8 +24,9 @@ asarUnpack:
   - node_modules/@node-llama-cpp/**
   - node_modules/node-llama-cpp/**
 win:
-  target: [{ target: nsis, arch: [x64] }]
-  icon: app/build/icon.png
+  # установщик и портативная версия (zip): если Windows не даёт запустить установщик
+  target: [{ target: nsis, arch: [x64] }, { target: zip, arch: [x64] }]
+  icon: app/assets/icon.ico
   files:
     - "!node_modules/@node-llama-cpp/mac-*/**"
     - "!node_modules/@node-llama-cpp/linux-*/**"
@@ -36,9 +37,13 @@ nsis:
   createDesktopShortcut: true
   shortcutName: Тендерный помощник
   language: "1049"
+  installerIcon: app/assets/icon.ico
+  uninstallerIcon: app/assets/icon.ico
+  # вопрос «удалить модели и настройки?» при удалении программы
+  include: app/assets/installer.nsh
 mac:
   target: [{ target: dmg, arch: [arm64, x64] }]
-  icon: app/build/icon.png
+  icon: app/assets/icon.icns
   category: public.app-category.business
   identity: null
   hardenedRuntime: false

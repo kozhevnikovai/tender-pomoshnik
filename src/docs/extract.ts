@@ -8,18 +8,38 @@ import { ocrImage } from "./ocr.js";
 /** Страница PDF с меньшим числом букв считается сканом и уходит в OCR */
 const SCAN_THRESHOLD = 40;
 
+interface ExtractOpts { ocr?: boolean; depth?: number }
+
 export async function extractFile(path: string, opts: { ocr?: boolean } = {}): Promise<DocText> {
   return extractBuffer(basename(path), readFileSync(path), opts);
 }
 
+/** Ограничения для архивов: защита от «zip-бомб» и бесконечной вложенности */
+export const ZIP_LIMITS = { entries: 30, entryBytes: 100 * 1024 * 1024, totalBytes: 300 * 1024 * 1024, depth: 2 };
+/** Больше стольких страниц-сканов не распознаём: OCR медленный */
+export const OCR_MAX_PAGES = 60;
+
 /** Архивы ZIP (в ЕИС документы часто упакованы): все поддерживаемые файлы внутри склеиваются в один документ */
-async function extractZip(name: string, buf: Buffer, opts: { ocr?: boolean }): Promise<DocText> {
-  const JSZip = (await import("jszip")).default;
-  const zip = await JSZip.loadAsync(buf);
+async function extractZip(name: string, buf: Buffer, opts: ExtractOpts): Promise<DocText> {
   const out: DocText = { name, kind: "docx", unit: "para", parts: [], tables: [], warnings: [] };
-  const entries = Object.values(zip.files).filter(f => !f.dir).slice(0, 30);
+  const depth = (opts.depth ?? 0) + 1;
+  if (depth > ZIP_LIMITS.depth) return { ...out, warnings: ["Архив внутри архива внутри архива — не распаковываем, откройте вручную"] };
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(buf).catch(() => { throw new Error("архив повреждён или защищён паролем"); });
+  const all = Object.values(zip.files).filter(f => !f.dir);
+  if (all.length > ZIP_LIMITS.entries) out.warnings.push(`В архиве ${all.length} файлов, прочитаны первые ${ZIP_LIMITS.entries}`);
+  const entries = all.slice(0, ZIP_LIMITS.entries);
+  let total = 0;
   for (const f of entries) {
-    const inner = await extractBuffer(f.name.split("/").pop()!, Buffer.from(await f.async("uint8array")), opts);
+    // размер после распаковки объявлен в архиве: «бомбу» не распаковываем вовсе
+    const size = Number((f as any)._data?.uncompressedSize ?? 0);
+    if (size > ZIP_LIMITS.entryBytes || total + size > ZIP_LIMITS.totalBytes) { out.warnings.push(`${f.name}: слишком большой после распаковки — пропущен`); continue; }
+    const data = Buffer.from(await f.async("uint8array"));
+    total += data.length;
+    if (total > ZIP_LIMITS.totalBytes) { out.warnings.push("Архив слишком большой после распаковки — остальные файлы пропущены"); break; }
+    let inner: DocText;
+    try { inner = await extractBuffer(f.name.split("/").pop()!, data, { ...opts, depth }); }
+    catch (e) { out.warnings.push(`${f.name}: не прочитан (${(e as Error).message.slice(0, 120)})`); continue; }
     if (entries.length === 1) return { ...inner, name: `${name} → ${inner.name}` };
     out.warnings.push(...inner.warnings.map(w => `${inner.name}: ${w}`));
     for (const p of inner.parts) out.parts.push({ n: out.parts.length + 1, text: p.text, ocr: p.ocr });
@@ -28,15 +48,24 @@ async function extractZip(name: string, buf: Buffer, opts: { ocr?: boolean }): P
   return out;
 }
 
+/** DOCX и ODT — тоже архивы: «бомбу» (маленький файл, сотни мегабайт после распаковки) не открываем */
+export const OFFICE_MAX_BYTES = 150 * 1024 * 1024;
+async function assertOfficeSize(buf: Buffer) {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(buf).catch(() => { throw new Error("файл повреждён"); });
+  const total = Object.values(zip.files).reduce((a, f) => a + Number((f as any)._data?.uncompressedSize ?? 0), 0);
+  if (total > OFFICE_MAX_BYTES) throw new Error("документ слишком большой после распаковки — откройте его вручную");
+  return zip;
+}
+
 /** OpenDocument (.odt): текст из content.xml */
 async function extractOdt(name: string, buf: Buffer): Promise<DocText> {
-  const JSZip = (await import("jszip")).default;
-  const xml = await (await JSZip.loadAsync(buf)).file("content.xml")?.async("string") ?? "";
+  const xml = await (await assertOfficeSize(buf)).file("content.xml")?.async("string") ?? "";
   const html = xml.replace(/<table:table-row[^>]*>/g, "<tr>").replace(/<\/table:table-row>/g, "</tr>").replace(/<table:table-cell[^>]*>/g, "<td>").replace(/<\/table:table-cell>/g, "</td>").replace(/<table:table [^>]*>/g, "<table>").replace(/<\/table:table>/g, "</table>").replace(/<\/text:(?:p|h)>/g, "</p>");
   return fromHtml(name, html);
 }
 
-export async function extractBuffer(name: string, buf: Buffer, opts: { ocr?: boolean } = {}): Promise<DocText> {
+export async function extractBuffer(name: string, buf: Buffer, opts: ExtractOpts = {}): Promise<DocText> {
   const ext = extname(name).toLowerCase();
   if (ext === ".zip") return extractZip(name.replace(/\.zip$/i, ""), buf, opts);
   if (ext === ".odt") return extractOdt(name, buf);
@@ -45,6 +74,7 @@ export async function extractBuffer(name: string, buf: Buffer, opts: { ocr?: boo
   if (ext === ".txt" || ext === ".md") return fromPlain(name, buf.toString("utf8"));
   if ([".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"].includes(ext)) {
     if (opts.ocr === false) return { name, kind: "image", unit: "page", parts: [], tables: [], warnings: ["Картинка пропущена: распознавание (OCR) выключено"] };
+    if (buf.length > 40 * 1024 * 1024) return { name, kind: "image", unit: "page", parts: [], tables: [], warnings: ["Картинка больше 40 МБ — не распознаётся, откройте вручную"] };
     const text = await ocrImage(buf);
     return { name, kind: "image", unit: "page", parts: [{ n: 1, text, ocr: true }], tables: [], warnings: [] };
   }
@@ -63,14 +93,15 @@ export function fromPlain(name: string, text: string): DocText {
 async function extractPdf(name: string, buf: Buffer, ocr: boolean): Promise<DocText> {
   const { getDocumentProxy, extractText, renderPageAsImage } = await import("unpdf");
   const data = new Uint8Array(buf);
-  const pdf = await getDocumentProxy(data, { verbosity: 0 } as any);
+  const pdf = await getDocumentProxy(data, { verbosity: 0 } as any).catch((e: Error) => { throw new Error(/password/i.test(e.message) ? "PDF защищён паролем" : "PDF повреждён"); });
   const { text } = await extractText(pdf, { mergePages: false });
   const pages = (text as string[]).map((t, i) => ({ n: i + 1, text: tidy(t), ocr: false as boolean }));
   const warnings: string[] = [];
   const scans = pages.filter(p => letters(p.text) < SCAN_THRESHOLD);
   if (scans.length && !ocr) warnings.push(`${scans.length} стр. похожи на скан, а OCR выключен — эти страницы не прочитаны`);
+  if (scans.length > OCR_MAX_PAGES && ocr) warnings.push(`Сканов ${scans.length} стр., распознаны первые ${OCR_MAX_PAGES} — остальные проверьте вручную`);
   if (scans.length && ocr) {
-    for (const p of scans) {
+    for (const p of scans.slice(0, OCR_MAX_PAGES)) {
       try {
         const png = await renderPageAsImage(new Uint8Array(buf), p.n, { canvasImport: () => import("@napi-rs/canvas"), scale: 2.5 });
         p.text = tidy(await ocrImage(Buffer.from(png)));
@@ -104,8 +135,9 @@ async function extractDoc(name: string, buf: Buffer): Promise<DocText> {
 }
 
 async function extractDocx(name: string, buf: Buffer): Promise<DocText> {
+  await assertOfficeSize(buf);
   const mammoth = (await import("mammoth")).default;
-  const { value: html } = await mammoth.convertToHtml({ buffer: buf });
+  const { value: html } = await mammoth.convertToHtml({ buffer: buf }).catch(() => { throw new Error("документ Word повреждён или в неподдерживаемом формате"); });
   return fromHtml(name, html);
 }
 

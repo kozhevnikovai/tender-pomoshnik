@@ -37,7 +37,7 @@ p.command("analyze").argument("<что...>", "номер извещения (19 
 
 p.command("ask").argument("<id>", "номер извещения или папка разбора").argument("<вопрос>").description("Вопрос по документам закупки — ответ с цитатами")
   .action(async (id: string, q: string) => {
-    const { docs } = loadRun(id);
+    const { docs } = loadRun(id, { anyPath: true });
     const llm = await createLLM(loadConfig().llm);
     try {
       const a = await ask(llm, docs, q);
@@ -59,7 +59,7 @@ p.command("calc").description("Обеспечение, антидемпинг и
 
 p.command("check").argument("<id>").argument("<предложение.json>", "{\"Ширина стола\": \"650\", ...}").description("Проверить характеристики заявки по ТЗ")
   .action((id: string, file: string) => {
-    const { report } = loadRun(id);
+    const { report } = loadRun(id, { anyPath: true });
     const res = checkOffer(report.requirements, JSON.parse(readFileSync(file, "utf8")));
     for (const x of res) console.log(`${x.ok === true ? "✓" : x.ok === false ? "✗" : "?"} ${x.name}: ${x.offered || "—"} (ТЗ: ${x.required}) — ${x.reason}`);
     const bad = res.filter(x => x.ok === false).length;
@@ -69,7 +69,7 @@ p.command("check").argument("<id>").argument("<предложение.json>", "{
 
 p.command("contract").argument("<id>").requiredOption("--signed <ГГГГ-ММ-ДД>").description("План исполнения контракта после победы (.ics)")
   .action((id: string, o) => {
-    const { report, dir } = loadRun(id);
+    const { report, dir } = loadRun(id, { anyPath: true });
     const plan = contractPlan(report, o.signed);
     for (const d of plan) console.log(`${d.at}  ${d.title} — ${d.basis}`);
     const f = join(dir, "исполнение-контракта.ics");

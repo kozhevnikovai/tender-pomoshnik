@@ -2,6 +2,8 @@ name: release
 on:
   release: { types: [published] }
   workflow_dispatch:
+  # ветки release/* — пробная сборка установщиков для ручной проверки (артефакты, без публикации)
+  push: { branches: ["release/**"] }
 permissions: { contents: write }
 jobs:
   build:
@@ -11,7 +13,8 @@ jobs:
         include:
           - { os: windows-latest, target: --win }
           - { os: macos-latest, target: --mac --arm64 }
-          - { os: macos-15-intel, target: --mac --x64 }
+          # Intel: dmgbuild падает на сборочной машине Intel (ошибка в утилите) — образ собираем штатным hdiutil
+          - { os: macos-15-intel, target: --mac dir --x64, hdiutil: true }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -22,6 +25,17 @@ jobs:
       - name: Установщик приложения
         run: npx electron-builder ${{ matrix.target }} --publish never
         env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" }
+      - name: Образ .dmg для Intel (hdiutil)
+        if: matrix.hdiutil
+        run: |
+          set -euo pipefail
+          V=$(node -p "require('./package.json').version")
+          APP=$(ls -d release/mac/*.app | head -1)
+          STAGE=$(mktemp -d)
+          cp -R "$APP" "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "Tender Pomoshnik" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "release/TenderPomoshnik-$V-mac-x64.dmg"
+          hdiutil verify "release/TenderPomoshnik-$V-mac-x64.dmg"
       - name: Расширение для Claude Desktop
         run: node scripts/build-mcpb.mjs
       - uses: softprops/action-gh-release@v2
@@ -29,11 +43,12 @@ jobs:
         with:
           files: |
             release/*.exe
+            release/*.zip
             release/*.dmg
             build/*.mcpb
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'release'
-        with: { name: "build-${{ matrix.os }}", path: "release/*.exe\nrelease/*.dmg\nbuild/*.mcpb" }
+        with: { name: "build-${{ matrix.os }}", path: "release/*.exe\nrelease/*.zip\nrelease/*.dmg\nbuild/*.mcpb" }
   npm:
     needs: build
     if: github.event_name == 'release'
