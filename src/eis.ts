@@ -9,13 +9,51 @@ const BASE = "https://zakupki.gov.ru";
 const UA = "TenderPomoshnik/1.0 (+https://github.com/kozhevnikovai/tender-pomoshnik)";
 let last = 0;
 
-async function get(url: string): Promise<Response> {
+/** Только сама ЕИС по https: ссылки со страниц и редиректы не могут увести запрос на другой адрес */
+export function isEisUrl(url: string): boolean {
+  try { const u = new URL(url); return u.protocol === "https:" && (u.hostname === "zakupki.gov.ru" || u.hostname.endsWith(".zakupki.gov.ru")) && !u.username && !u.password; }
+  catch { return false; }
+}
+
+/** Самый большой документ закупки, который скачиваем */
+export const MAX_DOC_BYTES = 100 * 1024 * 1024;
+
+async function get(url: string, redirects = 0): Promise<Response> {
+  if (!isEisUrl(url)) throw new Error(`Адрес не относится к ЕИС и не будет открыт: ${url}`);
   const wait = last + 1100 - Date.now();
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   last = Date.now();
-  const res = await netFetch("eis", url, { headers: { "user-agent": UA }, redirect: "follow" });
-  if (!res.ok) throw new Error(`ЕИС ответила ${res.status} на ${url}`);
+  const res = await netFetch("eis", url, { headers: { "user-agent": UA }, redirect: "manual", signal: AbortSignal.timeout(60_000) });
+  if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+    if (redirects >= 5) throw new Error("ЕИС перенаправляет по кругу — попробуйте позже");
+    return get(new URL(res.headers.get("location")!, url).toString(), redirects + 1);
+  }
+  if (!res.ok) throw new Error(res.status === 404 ? "Страница не найдена в ЕИС — проверьте номер извещения" : res.status >= 500 ? `ЕИС временно недоступна (ошибка ${res.status}) — попробуйте позже` : `ЕИС ответила ${res.status}`);
   return res;
+}
+
+/** Читает ответ не больше max байт: огромный файл не съест память */
+async function readCapped(res: Response, max = MAX_DOC_BYTES): Promise<Buffer | null> {
+  if (Number(res.headers.get("content-length") ?? 0) > max) { await res.body?.cancel().catch(() => {}); return null; }
+  if (!res.body) return Buffer.alloc(0);
+  const reader = res.body.getReader();
+  const parts: Uint8Array[] = [];
+  let n = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    n += value.byteLength;
+    if (n > max) { await reader.cancel().catch(() => {}); return null; }
+    parts.push(value);
+  }
+  return Buffer.concat(parts);
+}
+
+/** Имя файла для диска: без путей, точек в начале и зарезервированных имён Windows */
+export function safeFileName(title: string, i: number): string {
+  let n = title.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "_").replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, 120) || "документ";
+  if (/^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i.test(n)) n = "_" + n;
+  return `${String(i + 1).padStart(2, "0")} ${n}`;
 }
 
 const unesc = (s: string) => s.replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&laquo;/g, "«").replace(/&raquo;/g, "»").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d));
@@ -64,7 +102,9 @@ export function parseDocLinks(html: string): { title: string; url: string }[] {
   // 44-ФЗ: href … title="имя"; 223-ФЗ: href … data-tooltip='<span class="custom-tooltiptext">имя</span>'
   const res = [/href="([^"]*filestore[^"]*)"[^>]*?title="([^"]+)"/g, /href="([^"]*filestore[^"]*)"\s*data-tooltip='<span class="custom-tooltiptext">([^<]+)<\/span>/g];
   for (const m of res.flatMap(re => [...html.matchAll(re)])) {
-    const url = unesc(m[1]).startsWith("http") ? unesc(m[1]) : BASE + unesc(m[1]);
+    let url: string;
+    try { url = new URL(unesc(m[1]), BASE + "/").toString(); } catch { continue; }
+    if (!isEisUrl(url)) continue; // ссылки на сторонние сайты не скачиваем
     if (!out.some(d => d.url === url)) out.push({ title: unesc(m[2]).trim(), url });
   }
   return out;
@@ -94,17 +134,19 @@ export function cardDoc(c: NoticeCard): DocText {
 }
 
 /** Скачивает документы закупки в папку; возвращает пути */
-export async function downloadDocs(c: NoticeCard, dir: string, limit = 20): Promise<string[]> {
+export async function downloadDocs(c: NoticeCard, dir: string, limit = 20, warnings: string[] = []): Promise<string[]> {
   mkdirSync(dir, { recursive: true });
   const paths: string[] = [];
-  for (const d of c.docs.slice(0, limit)) {
-    const res = await get(d.url);
-    const buf = Buffer.from(await res.arrayBuffer());
-    const name = d.title.replace(/[\\/:*?"<>|]+/g, "_").slice(0, 120);
-    const p = join(dir, name);
-    writeFileSync(p, buf);
-    paths.push(p);
+  for (const [i, d] of c.docs.slice(0, limit).entries()) {
+    try {
+      const buf = await readCapped(await get(d.url));
+      if (!buf) { warnings.push(`«${d.title}» больше 100 МБ — не скачан, откройте его в ЕИС`); continue; }
+      const p = join(dir, safeFileName(d.title, i));
+      writeFileSync(p, buf);
+      paths.push(p);
+    } catch (e) { warnings.push(`«${d.title}» не скачан: ${(e as Error).message}`); }
   }
+  if (c.docs.length > limit) warnings.push(`Документов ${c.docs.length}, скачаны первые ${limit}`);
   return paths;
 }
 

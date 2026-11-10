@@ -29,7 +29,8 @@ export async function netFetch(kind: NetKind, url: string, init: RequestInit = {
   const host = new URL(url).host;
   if (kind !== "model-download") stats.sentBytes += bytes;
   stats.requests.push({ kind, host, bytes, at: new Date().toISOString() });
-  return fetch(url, init);
+  // не ждём вечно: интеграции — 20 с, облачная модель — 5 мин; ЕИС и загрузка моделей задают свой таймаут
+  return fetch(url, init.signal || kind === "model-download" ? init : { ...init, signal: AbortSignal.timeout(kind === "cloud-llm" ? 300_000 : kind === "eis" ? 60_000 : 20_000) });
 }
 
 function sizeOf(b: unknown): number {

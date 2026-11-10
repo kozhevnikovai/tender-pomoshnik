@@ -4,7 +4,7 @@
 <title>Тендерный помощник</title><link rel="stylesheet" href="style.css"></head>
 <body>
 <aside>
-  <div class="brand"><img src="icon.png" width="36" height="36" alt=""><div><b>Тендерный помощник</b><span class="mono">№ 004 · kozhevnikovai</span></div></div>
+  <div class="brand"><img src="icon.png" width="36" height="36" alt=""><div><b>Тендерный помощник</b><span class="mono" id="ver">kozhevnikovai</span></div></div>
   <nav>
     <button data-tab="tender" class="on"><span class="mono">01</span>Закупка</button>
     <button data-tab="profile"><span class="mono">02</span>Профиль компании</button>
@@ -12,6 +12,7 @@
     <button data-tab="archive"><span class="mono">04</span>Архив</button>
     <button data-tab="settings"><span class="mono">05</span>Настройки</button>
   </nav>
+  <button class="job hidden" id="job"><b>Скачиваем модели</b><span class="bar"><i></i></span><small id="job-s"></small></button>
   <div class="net" id="net"><i></i><span>Документы компании — на компьютере</span><small id="netInfo" class="mono">в облако: 0 байт</small></div>
 </aside>
 <main>
@@ -23,7 +24,7 @@
       <label for="reg">Номер извещения (19 цифр — 44-ФЗ, 11 цифр — 223-ФЗ)</label>
       <input type="text" id="reg" class="mono" placeholder="0372200092126000031" inputmode="numeric">
       <div class="drop" id="drop">или перетащите документы сюда · <button class="ghost" id="pick">Выбрать файлы</button></div>
-      <div class="files" id="files"></div>
+      <div class="files" id="files"></div><button class="link hidden" id="clear-files">Убрать файлы</button>
       <div class="row"><button class="primary big" id="go">Разобрать</button><label class="inline"><input type="checkbox" id="ocr" checked> распознавать сканы</label></div>
       <div class="progress" id="progress"></div><div class="err" id="err"></div>
     </div>
@@ -88,14 +89,20 @@
       <label>Языковая модель (нужна для мониторинга с ИИ-отсевом и вопросов)</label>
       <select id="s-provider"><option value="local">Локальная (Qwen3, на этом компьютере)</option><option value="claude">Claude — свой ключ API (текст закупки маскируется)</option><option value="openai">OpenAI-совместимый API</option></select>
       <div class="grid2"><div><label>Ключ API</label><input type="password" id="s-key"></div><div><label>Модель / адрес API</label><input type="text" id="s-model" placeholder="claude-sonnet-5-5"></div></div>
+      <ul class="packs" id="packs"></ul>
       <div class="row"><button class="ghost" id="s-models">Скачать модели (OCR, Qwen3 4B)</button><button class="ghost" id="s-models8">+ Qwen3 8B для видеокарты</button></div>
+      <div class="bar hidden" id="dlbar"><i></i></div><p class="progress" id="dl-info"></p>
+      <p class="disc">Загрузку можно прервать — она продолжится с того же места. Можно переходить на другие вкладки: прогресс виден слева.</p>
       <h2><span class="n">02</span>Уведомления и интеграции</h2>
       <div class="grid2">
         <div><label>Telegram: токен бота</label><input type="password" id="s-tg-token"></div><div><label>Telegram: chat id</label><input type="text" id="s-tg-chat" class="mono"></div>
         <div><label>Битрикс24: входящий вебхук</label><input type="password" id="s-b24"></div><div><label>Почта (SMTP): хост:порт</label><input type="text" id="s-smtp" placeholder="smtp.yandex.ru:465"></div>
         <div><label>Почта: логин</label><input type="text" id="s-mail-user"></div><div><label>Почта: пароль приложения</label><input type="password" id="s-mail-pass"></div>
-        <div><label>Почта: кому</label><input type="text" id="s-mail-to"></div><div><label>Папка для отчётов</label><input type="text" id="s-out"></div>
+        <div><label>Почта: кому</label><input type="text" id="s-mail-to"></div><div><label>Папка для отчётов</label><span class="inline"><input type="text" id="s-out"><button class="ghost" id="s-out-pick">Обзор</button></span></div>
       </div>
+      <div class="row wrap"><button class="ghost" data-test="telegram">Проверить Telegram</button><button class="ghost" data-test="email">Проверить почту</button><button class="ghost" data-test="bitrix24">Проверить Битрикс24</button>
+        <button class="link" data-clear="telegram">Отключить Telegram</button><button class="link" data-clear="email">Отключить почту</button><button class="link" data-clear="bitrix24">Отключить Битрикс24</button></div>
+      <p class="disc">Ключи и пароли хранятся на этом компьютере в зашифрованном виде (средствами Windows или macOS) и после сохранения не показываются. Пустое поле — значит ключ не меняется. Проверка Telegram и почты отправляет тестовое сообщение.</p>
       <div class="row"><button class="primary" id="s-save">Сохранить</button><span class="progress" id="s-msg"></span></div>
       <p class="disc" id="s-about"></p>
     </div>

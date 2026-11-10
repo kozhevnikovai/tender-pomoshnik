@@ -1,7 +1,7 @@
 // Разбор закупки целиком: по номеру извещения (карточка и документы из ЕИС) или по файлам.
 // Результат — папка с отчётом HTML/MD/JSON, календарём .ics и черновиками писем.
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { isAbsolute, join, relative } from "node:path";
 import { clarificationDraft, complaintDraft } from "./analyze/drafts.js";
 import { analyzeDocs } from "./analyze/index.js";
 import { extractFile } from "./docs/extract.js";
@@ -25,20 +25,28 @@ export async function run(i: RunInput): Promise<RunResult> {
   const id = i.regNumber ?? `файлы-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}`;
   const dir = i.outDir ?? join(c.outputDir, id);
   mkdirSync(dir, { recursive: true });
+  const dlWarnings: string[] = [];
   if (i.regNumber) {
     step("Карточка закупки в ЕИС");
     const card = await fetchCard(i.regNumber);
     extra.push(cardDoc(card));
     writeFileSync(join(dir, "карточка-еис.json"), JSON.stringify(card, null, 2));
     step(`Документы закупки: ${card.docs.length}`);
-    files.push(...await downloadDocs(card, join(dir, "документы")));
+    files.push(...await downloadDocs(card, join(dir, "документы"), 20, dlWarnings));
   }
   step("Разбор документов");
   const profile = i.profile === undefined ? loadProfile() : i.profile;
   const docs = [...extra];
-  for (const f of files) { step(`Читаю ${f.split(/[\\/]/).pop()}`); docs.push(await extractFile(f, { ocr: i.ocr ?? c.ocr })); }
+  for (const f of files) {
+    const name = f.split(/[\\/]/).pop()!;
+    step(`Читаю ${name}`);
+    // один битый или защищённый паролем файл не должен ломать весь разбор
+    try { docs.push(await extractFile(f, { ocr: i.ocr ?? c.ocr })); }
+    catch (e) { docs.push({ name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Файл не прочитан: ${(e as Error).message.slice(0, 200)}. Откройте его вручную`] }); }
+  }
   await closeOcr();
   const report = analyzeDocs(docs, { profile: profile ?? undefined });
+  report.warnings.push(...dlWarnings);
   writeFileSync(join(dir, "тексты.json"), JSON.stringify(docs));
   step("Отчёт и черновики");
   const drafts = { clarification: clarificationDraft(report, profile?.name || undefined), complaint: complaintDraft(report, profile?.name ? `${profile.name}${profile.inn ? `, ИНН ${profile.inn}` : ""}` : undefined) };
@@ -57,10 +65,22 @@ export async function run(i: RunInput): Promise<RunResult> {
 }
 
 /** Загрузка ранее разобранной закупки по номеру или пути к папке */
-export function loadRun(id: string): { report: Report; docs: DocText[]; dir: string } {
+/** anyPath — для командной строки: свой путь вне папки отчётов. MCP и приложение открывают только папку отчётов. */
+export function loadRun(id: string, o: { anyPath?: boolean } = {}): { report: Report; docs: DocText[]; dir: string } {
   const c = loadConfig();
-  const dir = existsSync(join(id, "отчёт.json")) ? id : join(c.outputDir, id);
-  if (!existsSync(join(dir, "отчёт.json"))) throw new Error(`Разбор «${id}» не найден. Сначала: tender analyze ${id}`);
+  if (o.anyPath && isAbsolute(id) && existsSync(join(id, "отчёт.json"))) return readRun(id);
+  const notFound = new Error(`Разбор «${id}» не найден. Сначала: tender analyze ${id}`);
+  if (!existsSync(c.outputDir)) throw notFound;
+  const base = realpathSync(c.outputDir);
+  const cand = isAbsolute(id) ? id : join(base, id);
+  if (!existsSync(join(cand, "отчёт.json"))) throw notFound;
+  // только разборы из папки отчётов: «../» и чужие папки не открываются
+  const dir = realpathSync(cand);
+  const rel = relative(base, dir);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new Error("Можно открывать только разборы из папки отчётов");
+  return readRun(dir);
+}
+function readRun(dir: string): { report: Report; docs: DocText[]; dir: string } {
   return { report: JSON.parse(readFileSync(join(dir, "отчёт.json"), "utf8")), docs: existsSync(join(dir, "тексты.json")) ? JSON.parse(readFileSync(join(dir, "тексты.json"), "utf8")) : [], dir };
 }
 
