@@ -142,13 +142,15 @@ npm run eval:fetch && npm run eval      # evals (нужен доступ к zaku
 - **Исполнение контракта** — этапы, контроль оплаты, черновики претензий — *скоро*
 - **Больше подключений** — amoCRM, 1С, Яндекс Трекер — *скоро*
 
+Цена — от 1 490 ₽ в месяц на компанию. Тем, кто оставит заявку на ранний доступ, — скидка 50 % на первый год.
+
 Нужно что-то из этого? [Оставьте заявку на ранний доступ](https://github.com/kozhevnikovai/tender-pomoshnik/issues/new?template=early-access.yml) — заявки влияют на порядок разработки.
 
 ## Другие инструменты kozhevnikovai
 
 - [Протоколист](https://github.com/kozhevnikovai/protokolist) — запись встречи → протокол, локально
-- [site-audit-ru](https://github.com/kozhevnikovai/site-audit-ru) — аудит сайта и конкурентов, 152-ФЗ
-- [ai-skills-ru-business](https://github.com/kozhevnikovai/ai-skills-ru-business) — 10 навыков для Claude: КП, отзывы, вакансии, регламенты
+- [Аудитор сайтов](https://github.com/kozhevnikovai/auditor-saitov) — аудит сайта и конкурентов, 152-ФЗ
+- [Бизнес-навыки](https://github.com/kozhevnikovai/biznes-navyki) — 10 навыков для Claude: КП, отзывы, вакансии, регламенты
 
 Об уязвимостях — приватно, см. [SECURITY.md](SECURITY.md).
 
