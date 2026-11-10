@@ -38,7 +38,7 @@ jobs:
           hdiutil verify "release/TenderPomoshnik-$V-mac-x64.dmg"
       - name: Расширение для Claude Desktop
         run: node scripts/build-mcpb.mjs
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         if: github.event_name == 'release'
         with:
           files: |
