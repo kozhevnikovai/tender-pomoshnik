@@ -42,7 +42,7 @@ export async function run(i: RunInput): Promise<RunResult> {
     step(`Читаю ${name}`);
     // один битый или защищённый паролем файл не должен ломать весь разбор
     try { docs.push(await extractFile(f, { ocr: i.ocr ?? c.ocr })); }
-    catch (e) { docs.push({ name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Файл не прочитан: ${(e as Error).message.slice(0, 200)}. Откройте его вручную`] }); }
+    catch (e) { docs.push({ name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Файл не прочитан: ${(e as any).code === "ENOENT" ? "файл не найден (перемещён или удалён)" : (e as any).code === "EACCES" || (e as any).code === "EPERM" ? "нет доступа к файлу" : (e as Error).message.slice(0, 200)}. Откройте его вручную`] }); }
   }
   await closeOcr();
   const report = analyzeDocs(docs, { profile: profile ?? undefined });
@@ -84,8 +84,20 @@ function readRun(dir: string): { report: Report; docs: DocText[]; dir: string } 
   return { report: JSON.parse(readFileSync(join(dir, "отчёт.json"), "utf8")), docs: existsSync(join(dir, "тексты.json")) ? JSON.parse(readFileSync(join(dir, "тексты.json"), "utf8")) : [], dir };
 }
 
-export function listRuns(): { id: string; title: string | null; createdAt: string }[] {
+export interface RunItem { id: string; title: string | null; createdAt: string; deadline: string | null; fit: string | null; highRisks: number }
+/** Разобранные закупки для архива: с ближайшим сроком подачи сверху; повреждённый отчёт не ломает список */
+export function listRuns(): RunItem[] {
   const c = loadConfig();
   if (!existsSync(c.outputDir)) return [];
-  return readdirSync(c.outputDir).filter(d => existsSync(join(c.outputDir, d, "отчёт.json"))).map(d => { const r: Report = JSON.parse(readFileSync(join(c.outputDir, d, "отчёт.json"), "utf8")); return { id: d, title: r.title, createdAt: r.createdAt }; }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const out: RunItem[] = [];
+  for (const d of readdirSync(c.outputDir)) {
+    const f = join(c.outputDir, d, "отчёт.json");
+    if (!existsSync(f)) continue;
+    try {
+      const r: Report = JSON.parse(readFileSync(f, "utf8"));
+      const dl = r.fields?.find(x => x.key === "deadline")?.value;
+      out.push({ id: d, title: r.title ?? null, createdAt: r.createdAt ?? "", deadline: typeof dl === "string" ? dl : null, fit: r.fitSummary ?? null, highRisks: (r.risks ?? []).filter(x => x.severity === "высокий").length });
+    } catch { /* файл повреждён — пропускаем */ }
+  }
+  return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

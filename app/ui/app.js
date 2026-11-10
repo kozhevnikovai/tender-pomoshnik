@@ -1,6 +1,6 @@
 // Интерфейс Тендерного помощника. Вся работа — в фоновом процессе через window.tp.core.
 const $ = id => document.getElementById(id);
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 let files = [], current = null, state = null;
 
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
@@ -120,9 +120,20 @@ $("m-run").onclick = async () => {
 // Архив
 async function loadArchive() {
   const list = await tp.core("list", {});
-  $("archive").innerHTML = list.map(x => `<div><span>${esc(x.title ?? x.id)}<br><small>${esc(x.id)} · ${esc(x.createdAt.slice(0, 10))}</small></span><button class="ghost" data-id="${esc(x.id)}">Открыть</button></div>`).join("") || "<div><small>Пока пусто</small></div>";
+  const today = Date.now();
+  const badge = x => {
+    if (!x.deadline) return "";
+    const days = Math.ceil((new Date(x.deadline).getTime() - today) / 864e5);
+    if (Number.isNaN(days)) return "";
+    return days < 0 ? '<small class="tag past">подача закрыта</small>' : `<small class="tag ${days <= 3 ? "hot" : ""}">до подачи ${days === 0 ? "меньше суток" : days + " дн."}</small>`;
+  };
+  $("archive").innerHTML = list.map(x => `<div><span>${esc(x.title ?? x.id)}<br><small>${esc(x.id)} · разобрано ${esc(x.createdAt.slice(0, 10))}</small> ${badge(x)}${x.highRisks ? ` <small class="tag hot">высоких рисков: ${x.highRisks}</small>` : ""}${x.fit ? ` <small class="tag">${esc(x.fit)}</small>` : ""}</span><button class="ghost" data-id="${esc(x.id)}">Открыть</button></div>`).join("") || "<div><small>Пока пусто</small></div>";
   document.querySelectorAll("[data-id]").forEach(b => b.onclick = async () => { showReport(await tp.core("open", { id: b.dataset.id })); document.querySelector('[data-tab="tender"]').click(); });
 }
+
+// «Скоро» и другие продукты
+$("soon-want").onclick = () => tp.openUrl("https://github.com/kozhevnikovai/tender-pomoshnik/issues/new?template=early-access.yml");
+document.querySelectorAll(".as-link").forEach(b => b.onclick = () => tp.openUrl(b.dataset.url));
 
 // Настройки
 function fillSettings(c) {

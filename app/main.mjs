@@ -1,8 +1,8 @@
 // Тендерный помощник — настольное приложение (Electron). Главный процесс: окно и фоновый обработчик.
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, utilityProcess } from "electron";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -94,7 +94,15 @@ ipcMain.handle("pick-files", async () => {
   return r.canceled ? [] : r.filePaths;
 });
 ipcMain.handle("pick-dir", async () => { const r = await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"] }); return r.canceled ? null : r.filePaths[0]; });
-ipcMain.handle("open", (_e, p) => shell.openPath(p));
+/** Открываем только папки и документы: исполняемый файл из папки отчётов или архива закупки не запустится */
+const OPENABLE = new Set([".html", ".docx", ".doc", ".odt", ".pdf", ".md", ".json", ".txt", ".ics", ".csv", ".xlsx", ".xls", ".png", ".jpg", ".jpeg"]);
+ipcMain.handle("open", (_e, p) => {
+  try {
+    if (typeof p !== "string" || !existsSync(p)) return "Файл не найден";
+    if (statSync(p).isDirectory() || OPENABLE.has(extname(p).toLowerCase())) return shell.openPath(p);
+    return "Этот тип файла приложение не открывает";
+  } catch (e) { return e.message; }
+});
 ipcMain.handle("open-url", (_e, u) => { if (/^https:\/\//.test(u)) shell.openExternal(u); });
 
 app.whenReady().then(() => { if (!gotLock) return; migrateSecrets(); createWindow(); if (process.env.TENDER_SMOKE) smoke(process.env.TENDER_SMOKE); });

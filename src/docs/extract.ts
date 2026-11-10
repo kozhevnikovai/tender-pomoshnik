@@ -48,10 +48,19 @@ async function extractZip(name: string, buf: Buffer, opts: ExtractOpts): Promise
   return out;
 }
 
+/** DOCX и ODT — тоже архивы: «бомбу» (маленький файл, сотни мегабайт после распаковки) не открываем */
+export const OFFICE_MAX_BYTES = 150 * 1024 * 1024;
+async function assertOfficeSize(buf: Buffer) {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(buf).catch(() => { throw new Error("файл повреждён"); });
+  const total = Object.values(zip.files).reduce((a, f) => a + Number((f as any)._data?.uncompressedSize ?? 0), 0);
+  if (total > OFFICE_MAX_BYTES) throw new Error("документ слишком большой после распаковки — откройте его вручную");
+  return zip;
+}
+
 /** OpenDocument (.odt): текст из content.xml */
 async function extractOdt(name: string, buf: Buffer): Promise<DocText> {
-  const JSZip = (await import("jszip")).default;
-  const xml = await (await JSZip.loadAsync(buf)).file("content.xml")?.async("string") ?? "";
+  const xml = await (await assertOfficeSize(buf)).file("content.xml")?.async("string") ?? "";
   const html = xml.replace(/<table:table-row[^>]*>/g, "<tr>").replace(/<\/table:table-row>/g, "</tr>").replace(/<table:table-cell[^>]*>/g, "<td>").replace(/<\/table:table-cell>/g, "</td>").replace(/<table:table [^>]*>/g, "<table>").replace(/<\/table:table>/g, "</table>").replace(/<\/text:(?:p|h)>/g, "</p>");
   return fromHtml(name, html);
 }
@@ -65,6 +74,7 @@ export async function extractBuffer(name: string, buf: Buffer, opts: ExtractOpts
   if (ext === ".txt" || ext === ".md") return fromPlain(name, buf.toString("utf8"));
   if ([".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"].includes(ext)) {
     if (opts.ocr === false) return { name, kind: "image", unit: "page", parts: [], tables: [], warnings: ["Картинка пропущена: распознавание (OCR) выключено"] };
+    if (buf.length > 40 * 1024 * 1024) return { name, kind: "image", unit: "page", parts: [], tables: [], warnings: ["Картинка больше 40 МБ — не распознаётся, откройте вручную"] };
     const text = await ocrImage(buf);
     return { name, kind: "image", unit: "page", parts: [{ n: 1, text, ocr: true }], tables: [], warnings: [] };
   }
@@ -125,8 +135,9 @@ async function extractDoc(name: string, buf: Buffer): Promise<DocText> {
 }
 
 async function extractDocx(name: string, buf: Buffer): Promise<DocText> {
+  await assertOfficeSize(buf);
   const mammoth = (await import("mammoth")).default;
-  const { value: html } = await mammoth.convertToHtml({ buffer: buf });
+  const { value: html } = await mammoth.convertToHtml({ buffer: buf }).catch(() => { throw new Error("документ Word повреждён или в неподдерживаемом формате"); });
   return fromHtml(name, html);
 }
 

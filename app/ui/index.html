@@ -11,6 +11,7 @@
     <button data-tab="monitor"><span class="mono">03</span>Мониторинг</button>
     <button data-tab="archive"><span class="mono">04</span>Архив</button>
     <button data-tab="settings"><span class="mono">05</span>Настройки</button>
+    <button data-tab="soon"><span class="mono">06</span>Скоро <i class="pill">Pro</i></button>
   </nav>
   <button class="job hidden" id="job"><b>Скачиваем модели</b><span class="bar"><i></i></span><small id="job-s"></small></button>
   <div class="net" id="net"><i></i><span>Документы компании — на компьютере</span><small id="netInfo" class="mono">в облако: 0 байт</small></div>
@@ -105,6 +106,25 @@
       <p class="disc">Ключи и пароли хранятся на этом компьютере в зашифрованном виде (средствами Windows или macOS) и после сохранения не показываются. Пустое поле — значит ключ не меняется. Проверка Telegram и почты отправляет тестовое сообщение.</p>
       <div class="row"><button class="primary" id="s-save">Сохранить</button><span class="progress" id="s-msg"></span></div>
       <p class="disc" id="s-about"></p>
+    </div>
+  </section>
+  <section id="tab-soon" class="hidden">
+    <div class="kicker">Планы</div><h1>Скоро: Тендерный помощник для отдела</h1>
+    <p class="lead">Всё, что есть сейчас, остаётся бесплатным и открытым (MIT). Платная версия добавит то, что нужно тендерному отделу. Этих возможностей пока нет — мы над ними работаем. Заявки помощник не подаёт и подавать не будет: это всегда делает человек.</p>
+    <div class="cards">
+      <div class="card"><h3>Работа командой <span class="status">скоро</span></h3><p>Роли «нашёл — оценил — согласовал — подал», комментарии и история решений по каждой закупке.</p></div>
+      <div class="card"><h3>Мониторинг без вас <span class="status">скоро</span></h3><p>Проверка ЕИС по расписанию и уведомления о новых подходящих закупках и изменениях в уже разобранных.</p></div>
+      <div class="card"><h3>Аналитика заказчика <span class="status">скоро</span></h3><p>Прошлые закупки заказчика, кто побеждал и с каким снижением цены — чтобы оценить шансы до подачи.</p></div>
+      <div class="card"><h3>Автозаполнение заявки <span class="status">скоро</span></h3><p>Формы и декларации из профиля компании, таблица характеристик товара по ТЗ.</p></div>
+      <div class="card"><h3>Исполнение контракта <span class="status">скоро</span></h3><p>Календарь этапов, контроль оплаты, черновики претензий и ответов заказчику.</p></div>
+      <div class="card"><h3>Больше подключений <span class="status">скоро</span></h3><p>amoCRM, 1С, Яндекс Трекер, общий календарь отдела.</p></div>
+    </div>
+    <div class="row wrap"><button class="primary" id="soon-want">Хочу ранний доступ</button><span class="progress">Откроется страница на GitHub: напишите, что вам важнее.</span></div>
+    <h2>Другие инструменты kozhevnikovai</h2>
+    <div class="cards">
+      <button class="card as-link" data-url="https://github.com/kozhevnikovai/protokolist"><h3>Протоколист</h3><p>Запись встречи → протокол с решениями, задачами и сроками. Локально.</p></button>
+      <button class="card as-link" data-url="https://github.com/kozhevnikovai/site-audit-ru"><h3>site-audit-ru</h3><p>Аудит сайта и конкурентов: SEO, путь к заявке, 152-ФЗ.</p></button>
+      <button class="card as-link" data-url="https://github.com/kozhevnikovai/ai-skills-ru-business"><h3>Навыки для Claude</h3><p>КП, ответы на отзывы, вакансии, регламенты.</p></button>
     </div>
   </section>
 </main>

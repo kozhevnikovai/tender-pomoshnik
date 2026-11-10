@@ -99,16 +99,23 @@ export function parseCard(html: string): [string, string][] {
 
 export function parseDocLinks(html: string): { title: string; url: string }[] {
   const out: { title: string; url: string }[] = [];
+  // Разбираем по одному тегу <a …> — время линейно от размера страницы, даже если она собрана специально.
   // 44-ФЗ: href … title="имя"; 223-ФЗ: href … data-tooltip='<span class="custom-tooltiptext">имя</span>'
-  const res = [/href="([^"]*filestore[^"]*)"[^>]*?title="([^"]+)"/g, /href="([^"]*filestore[^"]*)"\s*data-tooltip='<span class="custom-tooltiptext">([^<]+)<\/span>/g];
-  for (const m of res.flatMap(re => [...html.matchAll(re)])) {
+  for (const chunk of html.slice(0, MAX_PAGE_CHARS).split("<a ").slice(1)) {
+    const tag = chunk.slice(0, 2000);
+    const href = tag.match(/^[^>]*?href="([^"]*filestore[^"]*)"/)?.[1];
+    if (!href) continue;
+    const title = tag.match(/title="([^"]+)"/)?.[1] ?? tag.match(/data-tooltip='<span class="custom-tooltiptext">([^<]+)<\/span>/)?.[1];
+    if (!title) continue;
     let url: string;
-    try { url = new URL(unesc(m[1]), BASE + "/").toString(); } catch { continue; }
+    try { url = new URL(unesc(href), BASE + "/").toString(); } catch { continue; }
     if (!isEisUrl(url)) continue; // ссылки на сторонние сайты не скачиваем
-    if (!out.some(d => d.url === url)) out.push({ title: unesc(m[2]).trim(), url });
+    if (!out.some(d => d.url === url)) out.push({ title: unesc(title).trim(), url });
   }
   return out;
 }
+/** Страницы ЕИС — сотни килобайт; больше 5 млн знаков не разбираем */
+export const MAX_PAGE_CHARS = 5_000_000;
 
 export async function fetchCard(regNumber: string): Promise<NoticeCard> {
   if (!/^\d{11}$|^\d{19}$/.test(regNumber)) throw new Error("Номер извещения: 19 цифр (44-ФЗ) или 11 цифр (223-ФЗ)");
@@ -165,9 +172,11 @@ export async function searchRss(q: SearchQuery): Promise<SearchItem[]> {
 }
 
 export function parseRss(xml: string): SearchItem[] {
-  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m => {
-    const x = m[1];
-    const tag = (t: string) => unesc(x.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`))?.[1] ?? "").trim();
+  // split вместо «ленивого» регулярного выражения: время линейно даже на ленте без закрывающих тегов
+  return xml.slice(0, MAX_PAGE_CHARS).split("<item>").slice(1).map(chunk => {
+    const end = chunk.indexOf("</item>");
+    const x = end >= 0 ? chunk.slice(0, end) : chunk.slice(0, 20000);
+    const tag = (t: string) => { const a = x.indexOf(`<${t}>`), b = a < 0 ? -1 : x.indexOf(`</${t}>`, a); return a < 0 || b < 0 ? "" : unesc(x.slice(a + t.length + 2, b)).trim(); };
     const link = tag("link");
     const desc = clean(unesc(tag("description")));
     return { regNumber: link.match(/regNumber=(\d+)/)?.[1] ?? tag("title").match(/(\d{11,19})/)?.[1] ?? "", title: tag("title"), url: link, description: desc, published: tag("pubDate") || undefined };
