@@ -138,6 +138,9 @@ describe("разбор закупки", () => {
     expect(complaintDraft(r)).toMatch(/ст\. 105/);
     expect(toMarkdown(r)).toMatch(/Риски/);
     expect(toHtml(r)).toMatch(/Тендерный помощник/);
+    // светлый стиль приложения: без «Чертежа», шрифты встроены, внешних загрузок нет
+    expect(toHtml(r)).not.toMatch(/Martian|class="stamp"|https?:\/\/(fonts|cdn)/);
+    expect(toHtml(r)).toMatch(/class="foot"/);
     expect(toIcs(r)).toMatch(/BEGIN:VEVENT/);
     expect(contractPlan(r, "2026-11-20").some(d => /Оплата/.test(d.title))).toBe(true);
   });
