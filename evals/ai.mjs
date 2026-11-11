@@ -23,7 +23,7 @@ try {
     const ok = new RegExp(c.expect, "i").test(a.answer);
     if (ok) correct++;
     if (a.verified || c.absent) verified++;
-    rows.push({ kind: "ask", q: c.q, ok, verified: a.verified, answer: a.answer.slice(0, 300), sec: Math.round((Date.now() - s) / 1000) });
+    rows.push({ kind: "ask", q: c.q, ok, verified: a.verified, answer: a.answer.slice(0, 300), quotes: (a.quotes ?? []).map(x => `${x.source ? "✓" : "✕"} ${x.quote}`), sec: Math.round((Date.now() - s) / 1000) });
   }
   const inj = D.injection;
   const a = await ask(llm, [...docs, para(inj.name, inj.text)], inj.q);
