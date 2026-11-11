@@ -79,8 +79,10 @@ export async function extractBuffer(name: string, buf: Buffer, opts: ExtractOpts
     return { name, kind: "image", unit: "page", parts: [{ n: 1, text, ocr: true }], tables: [], warnings: [] };
   }
   if (ext === ".doc") return extractDoc(name, buf);
-  if (ext === ".rtf" || ext === ".xls" || ext === ".xlsx" || ext === ".rar" || ext === ".7z") {
-    return { name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Формат ${ext} пока не читается: сохраните файл как PDF или DOCX`] };
+  if (ext === ".xlsx" || ext === ".xls" || ext === ".ods") return extractSheet(name, buf, ext);
+  if (ext === ".rtf") return fromPlain(name, rtfToText(buf));
+  if (ext === ".rar" || ext === ".7z") {
+    return { name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Архив ${ext} пока не распаковывается: распакуйте его и добавьте файлы`] };
   }
   return { name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Неизвестный формат ${ext}`] };
 }
@@ -132,6 +134,84 @@ async function extractDoc(name: string, buf: Buffer): Promise<DocText> {
   }
   if (table.length) tables.push(table);
   return { name, kind: "docx", unit: "para", parts, tables, warnings: [] };
+}
+
+/** Таблицы Excel (.xlsx, .xls, .ods): обоснование НМЦК, спецификации, сметы. Каждая строка — абзац «A | B | C», ссылка «Лист, стр. N» */
+export const SHEET_LIMITS = { rows: 5000, cols: 60 };
+async function extractSheet(name: string, buf: Buffer, ext: string): Promise<DocText> {
+  if (ext !== ".xls") await assertOfficeSize(buf); // .xlsx и .ods — zip-архивы
+  const XLSX = await import("xlsx");
+  let wb: any;
+  try { wb = XLSX.read(buf, { type: "buffer", cellDates: true, cellFormula: false, cellHTML: false, sheetStubs: false }); }
+  catch { throw new Error("таблица повреждена или защищена паролем"); }
+  const out: DocText = { name, kind: "docx", unit: "para", parts: [], tables: [], warnings: [] };
+  for (const sheetName of wb.SheetNames as string[]) {
+    const ws = wb.Sheets[sheetName];
+    if (!ws?.["!ref"]) continue;
+    const rows: string[][] = (XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, blankrows: false, defval: "" }) as unknown[][])
+      .map(r => r.slice(0, SHEET_LIMITS.cols).map(c => tidy(String(c ?? ""))));
+    const kept = rows.filter(r => r.some(Boolean));
+    if (!kept.length) continue;
+    if (kept.length > SHEET_LIMITS.rows) out.warnings.push(`${sheetName}: прочитаны первые ${SHEET_LIMITS.rows} строк из ${kept.length}`);
+    const table = kept.slice(0, SHEET_LIMITS.rows);
+    out.tables.push(table);
+    if (wb.SheetNames.length > 1) out.parts.push({ n: out.parts.length + 1, text: `Лист «${sheetName}»` });
+    for (const r of table) out.parts.push({ n: out.parts.length + 1, text: r.filter(Boolean).join(" | ") });
+  }
+  if (!out.parts.length) out.warnings.push("В таблице нет данных");
+  return out;
+}
+
+/** RTF → текст без сторонних библиотек: кодовая страница из \ansicpg (обычно 1251), \uN, таблицы через « | » */
+export function rtfToText(buf: Buffer): string {
+  const src = buf.toString("latin1");
+  if (!src.startsWith("{\\rtf")) throw new Error("файл не похож на RTF");
+  const cp = src.match(/\\ansicpg(\d+)/)?.[1] ?? "1251";
+  let dec: TextDecoder;
+  try { dec = new TextDecoder(`windows-${cp}`); } catch { dec = new TextDecoder("windows-1251"); }
+  // служебные группы, текст которых не показывается
+  const SKIP = new Set(["fonttbl", "colortbl", "stylesheet", "info", "pict", "object", "header", "footer", "headerl", "headerr", "footerl", "footerr", "listtable", "listoverridetable", "rsidtbl", "xmlnstbl", "themedata", "colorschememapping", "latentstyles", "datastore", "generator", "filetbl", "revtbl"]);
+  const out: string[] = [];
+  let bytes: number[] = [];
+  const flush = () => { if (bytes.length) { out.push(dec.decode(Uint8Array.from(bytes))); bytes = []; } };
+  const stack: { skip: boolean; uc: number }[] = [];
+  let skip = false, uc = 1, pendingSkip = 0, i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (ch === "{") { stack.push({ skip, uc }); i++; continue; }
+    if (ch === "}") { flush(); const st = stack.pop(); if (st) { skip = st.skip; uc = st.uc; } i++; continue; }
+    if (ch === "\\") {
+      const nx = src[i + 1];
+      if (nx === "'") { // байт в кодовой странице
+        const h = parseInt(src.substr(i + 2, 2), 16); i += 4;
+        if (pendingSkip > 0) { pendingSkip--; continue; }
+        if (!skip && !Number.isNaN(h)) bytes.push(h);
+        continue;
+      }
+      if (nx === "\\" || nx === "{" || nx === "}") { if (!skip) bytes.push(nx.charCodeAt(0)); i += 2; continue; }
+      if (nx === "*") { skip = true; i += 2; continue; }
+      if (nx === "~") { if (!skip) bytes.push(0xa0); i += 2; continue; }
+      if (nx === "-" || nx === "_") { if (!skip && nx === "_") bytes.push(0x2d); i += 2; continue; }
+      const m = /^([a-z]+)(-?\d+)? ?/.exec(src.slice(i + 1, i + 40));
+      if (!m) { i += 2; continue; }
+      i += 1 + m[0].length;
+      const word = m[1], arg = m[2] !== undefined ? +m[2] : null;
+      if (SKIP.has(word)) { skip = true; continue; }
+      if (skip) continue;
+      if (word === "uc" && arg !== null) { uc = arg; continue; }
+      if (word === "u" && arg !== null) { flush(); out.push(String.fromCharCode(arg < 0 ? arg + 65536 : arg)); pendingSkip = uc; continue; }
+      if (word === "par" || word === "line" || word === "row" || word === "sect" || word === "page") { flush(); out.push("\n"); continue; }
+      if (word === "cell") { flush(); out.push(" | "); continue; }
+      if (word === "tab") { bytes.push(9); continue; }
+      continue;
+    }
+    if (ch === "\r" || ch === "\n") { i++; continue; }
+    if (pendingSkip > 0) { pendingSkip--; i++; continue; }
+    if (!skip) bytes.push(ch.charCodeAt(0) & 0xff);
+    i++;
+  }
+  flush();
+  return out.join("").split("\n").map(l => tidy(l.replace(/(\s*\|\s*)+$/, ""))).filter(Boolean).join("\n\n");
 }
 
 async function extractDocx(name: string, buf: Buffer): Promise<DocText> {

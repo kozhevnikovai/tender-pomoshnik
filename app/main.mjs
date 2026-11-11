@@ -90,7 +90,7 @@ ipcMain.handle("core", async (_e, method, args) => {
 });
 ipcMain.handle("version", () => app.getVersion());
 ipcMain.handle("pick-files", async () => {
-  const r = await dialog.showOpenDialog(win, { properties: ["openFile", "multiSelections"], filters: [{ name: "Документы закупки", extensions: ["pdf", "docx", "doc", "odt", "zip", "txt", "png", "jpg", "jpeg", "tif", "tiff"] }] });
+  const r = await dialog.showOpenDialog(win, { properties: ["openFile", "multiSelections"], filters: [{ name: "Документы закупки", extensions: ["pdf", "docx", "doc", "odt", "rtf", "xlsx", "xls", "ods", "zip", "txt", "png", "jpg", "jpeg", "tif", "tiff"] }] });
   return r.canceled ? [] : r.filePaths;
 });
 ipcMain.handle("pick-dir", async () => { const r = await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"] }); return r.canceled ? null : r.filePaths[0]; });

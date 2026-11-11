@@ -10,6 +10,7 @@ export * from "./law/calc.js";
 export { rules, searchRules, ref } from "./law/rules.js";
 export { run, loadRun, listRuns } from "./pipeline.js";
 export { contractPlan } from "./contract.js";
+export { isWorkDay, addWorkDays, minusWorkDays, rollToWorkDay, workDaysBetween, CALENDAR_YEARS } from "./law/calendar.js";
 export { toHtml } from "./export/html.js";
 export { toMarkdown, toIcs } from "./export/text.js";
 export { VERSION } from "./version.js";

@@ -1,11 +1,12 @@
 // После победы: план исполнения контракта — поставка, приёмка, оплата, возврат обеспечения.
+import { addWorkDays, rollToWorkDay } from "./law/calendar.js";
 import { ref, rule } from "./law/rules.js";
 import type { Deadline, Report } from "./types.js";
 
 const D = 864e5;
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
-function addWork(date: string, n: number) { let t = Date.parse(date); while (n > 0) { t += D; const w = new Date(t).getUTCDay(); if (w && w !== 6) n--; } return iso(t); }
-function addDays(date: string, n: number, work: boolean) { return work ? addWork(date, n) : iso(Date.parse(date) + n * D); }
+/** Рабочие дни — по производственному календарю РФ; календарный срок, выпавший на нерабочий день, переносится (ст. 193 ГК РФ) */
+function addDays(date: string, n: number, work: boolean) { return work ? addWorkDays(date, n) : rollToWorkDay(iso(Date.parse(date) + n * D)); }
 
 /** «30 календарных» → [30, false]; без уточнения считаем календарными и помечаем */
 const parse = (v: unknown): [number, boolean] | null => { const m = String(v ?? "").match(/(\d+)\s*(рабочих)?/); return m ? [+m[1], !!m[2]] : null; };

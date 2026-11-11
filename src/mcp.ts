@@ -26,14 +26,14 @@ const RULES = `Правила ответа пользователю (обяза�
 4. Ты не подаёшь заявки, не подписываешь документы и не работаешь с ЭЦП и паролями площадок — подаёт человек.
 5. В конце: «Это помощник, а не юридическая консультация; финальное решение и проверка — за вами».`;
 
-const DOC_EXT = /\.(pdf|docx|doc|odt|zip|txt|md|png|jpe?g|tiff?|bmp|webp)$/i;
+const DOC_EXT = /\.(pdf|docx|doc|odt|rtf|xlsx|xls|ods|zip|txt|md|png|jpe?g|tiff?|bmp|webp)$/i;
 /**
  * Файлы для разбора через MCP: только документы и только не из скрытых и служебных папок.
  * Иначе подсказка, спрятанная в чужом документе, могла бы заставить модель «разобрать» ключи или настройки.
  */
 export function assertDocPath(p: string) {
   const parts = p.split(/[\\/]+/);
-  if (!DOC_EXT.test(p)) throw new Error(`Не документ закупки: ${parts.at(-1)}. Подойдут PDF, DOCX, DOC, ODT, ZIP, TXT и сканы`);
+  if (!DOC_EXT.test(p)) throw new Error(`Не документ закупки: ${parts.at(-1)}. Подойдут PDF, DOCX, DOC, ODT, RTF, XLS/XLSX, ZIP, TXT и сканы`);
   if (parts.some(x => (x.startsWith(".") && x.length > 1 && x !== "..") || /^(AppData|Keychains|ProgramData|System32|etc)$/i.test(x)) || parts.includes(".."))
     throw new Error("Файлы из скрытых и системных папок через Claude не разбираются — скопируйте документ в обычную папку");
 }
@@ -43,7 +43,7 @@ export function buildServer(): McpServer {
 
   s.registerTool("analyze_tender", {
     title: "Разобрать закупку",
-    description: "Разбирает закупку 44-ФЗ/223-ФЗ: по номеру извещения скачивает карточку и документы из открытой части ЕИС, либо читает файлы (PDF, DOCX, DOC, сканы — OCR локально). Возвращает сведения с цитатами, расчёты обеспечения и антидемпинга, риски, сроки, вердикт по профилю компании и путь к HTML-отчёту.",
+    description: "Разбирает закупку 44-ФЗ/223-ФЗ: по номеру извещения скачивает карточку и документы из открытой части ЕИС, либо читает файлы (PDF, DOCX, DOC, RTF, XLS/XLSX, сканы — OCR локально). Возвращает сведения с цитатами, расчёты обеспечения и антидемпинга, риски, сроки, вердикт по профилю компании и путь к HTML-отчёту.",
     inputSchema: { reg_number: z.string().optional().describe("Номер извещения: 19 цифр (44-ФЗ) или 11 цифр (223-ФЗ)"), files: z.array(z.string()).optional().describe("Полные пути к документам закупки") },
   }, async ({ reg_number, files }) => {
     if (!reg_number && !files?.length) throw new Error("Нужен номер извещения или файлы");
