@@ -11,7 +11,8 @@ import { toIcs } from "./export/text.js";
 import { antidumping, bidSecurity, contractSecurity, supplierFine } from "./law/calc.js";
 import { rules, searchRules } from "./law/rules.js";
 import { createLLM } from "./llm.js";
-import { download, missing } from "./models.js";
+import { detectHardware, recommend } from "@kozhevnikovai/local-ai";
+import { download, LLM_MODELS, missing, PACKS, selectLlm } from "./models.js";
 import { runMonitor } from "./monitor.js";
 import { setOffline } from "./net.js";
 import { listRuns, loadRun, run } from "./pipeline.js";
@@ -100,11 +101,19 @@ p.command("rules").argument("[слова...]").option("--all").description("Ба
   for (const r of list) console.log(`${r.act}, ${r.ref} — ${r.title}${r.status === "check" ? " [проверить]" : ""}\n  ${r.summary}\n  ${r.sources.join("\n  ")}\n`);
 });
 
-p.command("models").option("--8b", "дополнительно Qwen3 8B (точнее, нужна видеокарта 8 ГБ)").description("Скачать модели: OCR и локальную языковую модель").action(async o => {
-  const packs = ["ocr", "llm", ...(o["8b"] ? ["llm-8b"] : [])];
+p.command("models").option("--model <id>", `языковая модель: ${LLM_MODELS.map(m => `${m.id} (${m.title})`).join(", ")}`).option("--no-llm", "только OCR, без языковой модели").description("Скачать модели: OCR и локальную языковую модель (выбирается по компьютеру)").action(async o => {
+  let id: string | undefined = o.model ?? loadConfig().llm.localModel;
+  if (!id && o.llm !== false) {
+    const r = recommend(await detectHardware());
+    console.log(r.reason);
+    id = r.model.id;
+  }
+  if (id && o.llm !== false) { const ok = selectLlm(id); if (ok !== loadConfig().llm.localModel) saveConfig({ llm: { localModel: ok } }); }
+  const packs = o.llm === false ? ["ocr"] : ["ocr", "llm"];
   if (!missing(packs).length) return console.log("Модели уже скачаны");
+  for (const id of packs) console.log(`• ${PACKS[id].title} — ${PACKS[id].license}`);
   await download(packs, e => process.stderr.write(`\r${e.file}: ${Math.round(e.done / e.total * 100)}%   `));
-  console.log("\nГотово");
+  console.log("\nГотово. Дальше разбор работает без интернета.");
 });
 
 p.command("mcp").description("MCP-сервер для Claude Desktop и других клиентов").action(async () => { const { startMcp } = await import("./mcp.js"); await startMcp(); });

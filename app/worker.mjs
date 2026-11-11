@@ -1,7 +1,8 @@
 // Фоновый процесс: чтение документов, OCR и разбор не тормозят окно.
 import * as core from "../dist/index.js";
 import { loadConfig, saveConfig, loadProfile, saveProfile, setSecrets, EMPTY_PROFILE } from "../dist/config.js";
-import { download, missing, plan, totalSize } from "../dist/models.js";
+import { download, LLM_MODELS, missing, plan, selectLlm, totalSize } from "../dist/models.js";
+import { detectHardware, recommend } from "@kozhevnikovai/local-ai";
 import { netStats, setOffline } from "../dist/net.js";
 import { runMonitor } from "../dist/monitor.js";
 import { bitrixDeal, sendEmail, sendTelegram, summaryText } from "../dist/integrations/index.js";
@@ -11,11 +12,29 @@ const progress = stage => port.postMessage({ type: "progress", stage });
 const net = () => port.postMessage({ type: "net", ...netStats() });
 
 let downloading = null;
+let hw = null; // характеристики компьютера: llama.cpp определяет видеокарту один раз
+/** Выбор языковой модели по железу: при первом запуске рекомендованная сохраняется сама, сменить — в настройках */
+async function models() {
+  hw ??= await detectHardware();
+  const r = recommend(hw);
+  let c = loadConfig();
+  const first = !c.llm.localModel;
+  if (first) { saveConfig({ llm: { localModel: r.model.id } }); c = loadConfig(); }
+  return { first, selected: selectLlm(c.llm.localModel), recommended: r.model.id, reason: r.reason, hw,
+    options: r.options.map(o => ({ id: o.model.id, tier: o.model.tier, title: o.model.title, vendor: o.model.vendor, note: o.model.note, size: o.model.file.size, ok: o.ok, why: o.why })) };
+}
 const methods = {
-  status() { return { version: core.VERSION, rules: core.rules().rules.length, rulesVersion: core.rules().version, missing: missing().map(f => f.path), left: totalSize(missing()), packs: plan(), downloading: !!downloading, config: loadConfig(), profile: loadProfile() ?? EMPTY_PROFILE, net: netStats() }; },
-  async download({ big }) {
+  async status() { const llm = await models(); return { llm, version: core.VERSION, rules: core.rules().rules.length, rulesVersion: core.rules().version, missing: missing().map(f => f.path), left: totalSize(missing()), packs: plan(), downloading: !!downloading, config: loadConfig(), profile: loadProfile() ?? EMPTY_PROFILE, net: netStats() }; },
+  /** Сменить локальную языковую модель; файлы другой модели не удаляются */
+  async setModel({ id }) {
+    if (downloading) throw new Error("Дождитесь окончания загрузки");
+    if (!LLM_MODELS.some(m => m.id === id)) throw new Error("Неизвестная модель");
+    saveConfig({ llm: { localModel: id } });
+    return { llm: await models(), packs: plan(), left: totalSize(missing()) };
+  },
+  async download() {
     if (downloading) return downloading; // повторный клик не запускает вторую загрузку
-    downloading = download(["ocr", "llm", ...(big ? ["llm-8b"] : [])], e => port.postMessage({ type: "progress", stage: "download", ...e })).then(() => true).finally(() => { downloading = null; });
+    downloading = download(["ocr", "llm"], e => port.postMessage({ type: "progress", stage: "download", ...e })).then(() => true).finally(() => { downloading = null; });
     return downloading;
   },
   /** Проверка подключения из настроек: тестовое сообщение в Telegram / почту, профиль в Битрикс24 */

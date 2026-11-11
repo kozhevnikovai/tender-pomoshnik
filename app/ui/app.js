@@ -12,7 +12,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
 
 const size = b => b >= 1073741824 ? (b / 1073741824).toFixed(1).replace(".", ",") + " ГБ" : b >= 1048576 ? Math.round(b / 1048576) + " МБ" : Math.max(1, Math.round(b / 1024)) + " КБ";
 const fmt = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h} ч ${m} мин` : m ? `${m} мин` : `${s % 60} с`; };
-const FILE_NAMES = { "rus.traineddata": "распознавание сканов (русский)", "eng.traineddata": "распознавание сканов (английский)", "llm/qwen3-4b-instruct-2507-q4_k_m.gguf": "языковая модель 4B", "llm/qwen3-8b-q4_k_m.gguf": "языковая модель 8B" };
+const FILE_NAMES = { "rus.traineddata": "распознавание сканов (русский)", "eng.traineddata": "распознавание сканов (английский)", "llm/qwen3-4b-instruct-2507-q4_k_m.gguf": "языковая модель Qwen3 4B", "llm/Qwen3-14B-Q4_K_M.gguf": "языковая модель Qwen3 14B" };
 let dlFrom = null;
 tp.on("progress", m => {
   if (m.stage === "download") {
@@ -165,20 +165,32 @@ document.querySelectorAll("[data-test]").forEach(b => b.onclick = async () => {
 });
 document.querySelectorAll("[data-clear]").forEach(b => b.onclick = async () => { state.config = await tp.core("saveConfig", { patch: { [b.dataset.clear]: null } }); fillSettings(state.config); $("s-msg").textContent = "Подключение отключено"; });
 const renderPacks = packs => { $("packs").innerHTML = packs.map(p => `<li><span>${esc(p.title)} <small>· ${esc(p.license)}</small></span><b>${p.missing ? size(p.size) : "✓ скачано"}</b></li>`).join(""); };
-const dl = big => async () => {
-  if ($("s-models").disabled) return;
-  $("s-models").disabled = $("s-models8").disabled = true; dlFrom = null;
-  $("dl-info").textContent = "· подготовка загрузки…";
-  try { await tp.core("download", { big }); $("dl-info").textContent = "Модели скачаны — интернет для разбора больше не нужен"; renderPacks((await tp.core("status", {})).packs); }
-  catch (e) { $("dl-info").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, "") + " Нажмите ещё раз — загрузка продолжится с того же места."; }
-  $("s-models").disabled = $("s-models8").disabled = false; $("job").classList.add("hidden");
+const TIER = { light: "Лёгкая", strong: "Мощная" };
+const renderLlm = m => {
+  $("s-llm").innerHTML = m.options.map(o => `<option value="${esc(o.id)}"${o.id === m.selected ? " selected" : ""}>${esc(TIER[o.tier])}: ${esc(o.title)} · ${size(o.size)}${o.id === m.recommended ? " — рекомендуем" : ""}${o.ok ? "" : " — не хватит памяти"}</option>`).join("");
+  const o = m.options.find(x => x.id === m.selected);
+  $("s-llm-why").textContent = `${m.reason} ${o ? o.note + "." : ""}${o && !o.ok ? " Внимание: " + o.why + "." : ""} Файлы другой модели не удаляются.`;
 };
-$("s-models").onclick = dl(false); $("s-models8").onclick = dl(true);
+$("s-llm").onchange = async () => {
+  try { const r = await tp.core("setModel", { id: $("s-llm").value }); renderLlm(r.llm); renderPacks(r.packs); $("dl-info").textContent = r.left ? `Нужно скачать ${size(r.left)}` : "Модель уже скачана"; }
+  catch (e) { $("dl-info").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, ""); renderLlm(state.llm); }
+};
+const dl = () => async () => {
+  if ($("s-models").disabled) return;
+  $("s-models").disabled = $("s-llm").disabled = true; dlFrom = null;
+  $("dl-info").textContent = "· подготовка загрузки…";
+  try { await tp.core("download", {}); $("dl-info").textContent = "Модели скачаны — интернет для разбора больше не нужен"; renderPacks((await tp.core("status", {})).packs); }
+  catch (e) { $("dl-info").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, "") + " Нажмите ещё раз — загрузка продолжится с того же места."; }
+  $("s-models").disabled = $("s-llm").disabled = false; $("job").classList.add("hidden");
+};
+$("s-models").onclick = dl();
 
 (async () => {
   state = await tp.core("status", {});
-  fillProfile(state.profile); fillSettings(state.config); renderPacks(state.packs);
+  fillProfile(state.profile); fillSettings(state.config); renderPacks(state.packs); renderLlm(state.llm);
+  // первый запуск: модель выбрана по компьютеру — показываем почему и где сменить
+  if (state.llm.first) { document.querySelector('[data-tab="settings"]').click(); $("dl-info").textContent = "Модель выбрана по вашему компьютеру — можно сменить выше. Нажмите «Скачать модели», это нужно один раз."; }
   $("ver").textContent = `v${state.version} · kozhevnikovai`;
-  if (state.downloading) dl(false)();
+  if (state.downloading) dl()();
   $("s-about").textContent = `Версия ${state.version} · база норм ${state.rulesVersion}, карточек: ${state.rules} · MIT · github.com/kozhevnikovai/tender-pomoshnik`;
 })();

@@ -90,8 +90,11 @@
       <label>Языковая модель (нужна для мониторинга с ИИ-отсевом и вопросов)</label>
       <select id="s-provider"><option value="local">Локальная (Qwen3, на этом компьютере)</option><option value="claude">Claude — свой ключ API (текст закупки маскируется)</option><option value="openai">OpenAI-совместимый API</option></select>
       <div class="grid2"><div><label>Ключ API</label><input type="password" id="s-key"></div><div><label>Модель / адрес API</label><input type="text" id="s-model" placeholder="claude-sonnet-5-5"></div></div>
+      <label for="s-llm">Локальная модель</label>
+      <select id="s-llm"></select>
+      <p class="disc" id="s-llm-why"></p>
       <ul class="packs" id="packs"></ul>
-      <div class="row"><button class="ghost" id="s-models">Скачать модели (OCR, Qwen3 4B)</button><button class="ghost" id="s-models8">+ Qwen3 8B для видеокарты</button></div>
+      <div class="row"><button class="ghost" id="s-models">Скачать модели</button></div>
       <div class="bar hidden" id="dlbar"><i></i></div><p class="progress" id="dl-info"></p>
       <p class="disc">Загрузку можно прервать — она продолжится с того же места. Можно переходить на другие вкладки: прогресс виден слева.</p>
       <h2><span class="n">02</span>Уведомления и интеграции</h2>
