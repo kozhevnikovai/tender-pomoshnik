@@ -162,6 +162,9 @@ async function extractSheet(name: string, buf: Buffer, ext: string): Promise<Doc
   return out;
 }
 
+/** Пустые ячейки в конце строки таблицы: «A | B |  | » → «A | B» (без регулярного выражения — строка из файла) */
+function trimCells(l: string) { let e = l.length; while (e > 0 && (l[e - 1] === "|" || l[e - 1] === " " || l[e - 1] === "\t")) e--; return l.slice(0, e); }
+
 /** RTF → текст без сторонних библиотек: кодовая страница из \ansicpg (обычно 1251), \uN, таблицы через « | » */
 export function rtfToText(buf: Buffer): string {
   const src = buf.toString("latin1");
@@ -211,7 +214,7 @@ export function rtfToText(buf: Buffer): string {
     i++;
   }
   flush();
-  return out.join("").split("\n").map(l => tidy(l.replace(/(\s*\|\s*)+$/, ""))).filter(Boolean).join("\n\n");
+  return out.join("").split("\n").map(l => tidy(trimCells(l))).filter(Boolean).join("\n\n");
 }
 
 async function extractDocx(name: string, buf: Buffer): Promise<DocText> {

@@ -9,7 +9,7 @@ import { loadWatch, setWatched } from "../dist/watch.js";
 import { customerHistory } from "../dist/analytics.js";
 import { claimDraft } from "../dist/analyze/drafts.js";
 import { draftDocx } from "../dist/export/docx.js";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homeDir } from "../dist/models.js";
 import { bitrixDeal, sendEmail, sendTelegram, summaryText } from "../dist/integrations/index.js";
@@ -86,7 +86,8 @@ const methods = {
     const every = Number(c.monitor.everyHours) || 0;
     if (!every || c.offline || (!c.monitor.queries.length && !loadWatch().length)) return null;
     const f = join(homeDir(), "monitor-last.json");
-    const last = existsSync(f) ? JSON.parse(readFileSync(f, "utf8")).at ?? 0 : 0;
+    let last = 0;
+    try { last = JSON.parse(readFileSync(f, "utf8")).at ?? 0; } catch { /* первый запуск */ }
     if (Date.now() - last < every * 3600e3) return null;
     writeFileSync(f, JSON.stringify({ at: Date.now() }));
     const r = await runMonitor({ notify: true });

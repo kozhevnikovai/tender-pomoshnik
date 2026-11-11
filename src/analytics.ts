@@ -15,12 +15,32 @@ export interface CustomerStats {
   notes: string[];
 }
 
-const priceOf = (d: string) => { const m = d.match(/(?:начальная|максимальная)[^:]*цена[^:]*:\s*([\d\s]+(?:[.,]\d{1,2})?)/i); const n = m ? Number(m[1].replace(/\s/g, "").replace(",", ".")) : NaN; return Number.isFinite(n) && n > 0 ? n : null; };
-const stageOf = (d: string) => d.match(/[Ээ]тап (?:размещения|закупки)\s*:\s*([^:]+?)(?=\s+[А-ЯЁ][а-яё ]{2,40}:|$)/)?.[1]?.trim() ?? null;
+/** Значение после метки «… цена …:» — без регулярных выражений с откатами (описание приходит из сети) */
+function after(d: string, label: RegExp): string | null {
+  const m = label.exec(d.slice(0, 4000));
+  return m ? d.slice(m.index + m[0].length, m.index + m[0].length + 200) : null;
+}
+const priceOf = (d: string) => {
+  const v = after(d, /(?:начальная|максимальная)[^:]{0,40}цена[^:]{0,40}:/i)?.trimStart().match(/^[\d ]{1,20}(?:[.,]\d{1,2})?/)?.[0];
+  const n = v ? Number(v.replace(/ /g, "").replace(",", ".")) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+/** Этап — текст до следующей метки «Размещено:», «Обновлено:» и т. п.: последнее слово с заглавной перед двоеточием — уже метка */
+const stageOf = (d: string) => {
+  const rest = after(d, /[Ээ]тап (?:размещения|закупки) ?:/);
+  if (rest == null) return null;
+  const words = rest.split(":")[0].trim().split(" ").filter(Boolean);
+  let label = -1;
+  if (rest.includes(":")) for (let k = words.length - 1; k > 0; k--) if (/^[А-ЯЁ]/.test(words[k])) { label = k; break; }
+  const stage = (label > 0 ? words.slice(0, label) : words).join(" ").trim();
+  return stage || null;
+};
 const STOP = new Set(["поставка", "поставки", "оказание", "услуг", "услуги", "выполнение", "работ", "работы", "нужд", "нужды", "для", "товаров", "товара", "закупка", "право", "заключения", "договора", "контракта", "году", "года", "годов", "учреждения", "оказанию", "выполнению"]);
 
+const stripNumber = (t: string) => { const x = t.trim(); const m = /^№? ?\d{11,19}/.exec(x); return m ? x.slice(m[0].length).replace(/^[ .—-]{0,5}/, "") : x; };
+
 export function summarize(customer: string, items: SearchItem[]): CustomerStats {
-  const recent = items.map(i => ({ regNumber: i.regNumber, title: i.title.replace(/^\s*№?\s*\d{11,19}\s*[.—-]?\s*/, ""), price: priceOf(i.description), stage: stageOf(i.description), published: i.published, url: i.url }));
+  const recent = items.map(i => ({ regNumber: i.regNumber, title: stripNumber(i.title), price: priceOf(i.description), stage: stageOf(i.description), published: i.published, url: i.url }));
   const byStage: Record<string, number> = {};
   for (const r of recent) { const k = r.stage ?? "не указан"; byStage[k] = (byStage[k] ?? 0) + 1; }
   const cancelled = recent.filter(r => /отмен/i.test(r.stage ?? "")).length;

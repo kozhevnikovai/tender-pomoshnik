@@ -10,6 +10,7 @@ on:
   push:
     branches: ["release/**"]
     paths: ["evals/ai/**", "evals/ai.mjs", "src/ask.ts", "src/monitor.ts", "src/llm.ts", "src/models.ts", "package-lock.json"]
+permissions: { contents: read }
 jobs:
   ai:
     strategy:
