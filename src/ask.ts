@@ -19,6 +19,8 @@ export const fence = (t: string) => t.replace(/<\/?docs/gi, "‹docs");
 
 /** Модель часто добавляет к цитате метку источника «[Извещение.docx, абз. 3]», кавычки или многоточие — убираем */
 export function cleanQuote(q: string): string {
+  // маленькая модель иногда кладёт в строку целый объект: {"text": "…", "source": "…"}
+  if (/^\s*\{[\s\S]*"(?:text|quote)"\s*:/.test(q)) { try { const o = JSON.parse(q); q = String(o.text ?? o.quote ?? q); } catch { const m = q.match(/"(?:text|quote)"\s*:\s*"((?:[^"\\]|\\.)*)"/); if (m) q = m[1].replace(/\\"/g, '"'); } }
   return q.replace(/^\s*\[[^\]]{1,120}\]\s*/, "").replace(/^\s*[«"„“]+|[»"“”]+\s*$/g, "").replace(/^[\s.…]+|[\s.…;,]+$/g, "").trim();
 }
 /** Цитата с пропуском («…») засчитывается, если каждая её часть есть в одном документе */
