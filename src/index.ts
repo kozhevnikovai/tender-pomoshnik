@@ -2,7 +2,8 @@
 export * from "./types.js";
 export { analyzeDocs, analyzeFiles, DISCLAIMER } from "./analyze/index.js";
 export { extractRequirements, checkOffer, parseRequired } from "./analyze/requirements.js";
-export { clarificationDraft, complaintDraft } from "./analyze/drafts.js";
+export { clarificationDraft, complaintDraft, declarationsDraft, claimDraft, customerPenalty, type ClaimInput } from "./analyze/drafts.js";
+export { detectPlatform } from "./analyze/platform.js";
 export { extractFile, fromPlain } from "./docs/extract.js";
 export { locate } from "./docs/quote.js";
 export { fetchCard, cardDoc, parseCard, parseDocLinks, searchRss, parseRss } from "./eis.js";
@@ -14,3 +15,6 @@ export { isWorkDay, addWorkDays, minusWorkDays, rollToWorkDay, workDaysBetween, 
 export { toHtml } from "./export/html.js";
 export { toMarkdown, toIcs } from "./export/text.js";
 export { VERSION } from "./version.js";
+export { customerHistory, summarize as summarizeCustomer, type CustomerStats } from "./analytics.js";
+export { loadWatch, setWatched, checkWatched, diff as watchDiff, snapshot as watchSnapshot } from "./watch.js";
+export { runMonitor, notifyText } from "./monitor.js";

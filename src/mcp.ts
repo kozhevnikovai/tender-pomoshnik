@@ -3,13 +3,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { clarificationDraft, complaintDraft } from "./analyze/drafts.js";
+import { claimDraft, clarificationDraft, complaintDraft } from "./analyze/drafts.js";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { draftDocx } from "./export/docx.js";
 import { checkOffer } from "./analyze/requirements.js";
 import { retrieve } from "./ask.js";
 import { EMPTY_PROFILE, loadProfile, saveProfile } from "./config.js";
 import { contractPlan } from "./contract.js";
 import { locate, fmtSource } from "./docs/quote.js";
 import { searchRss } from "./eis.js";
+import { customerHistory } from "./analytics.js";
 import { toMarkdown } from "./export/text.js";
 import { antidumping, bidSecurity, contractSecurity, supplierFine } from "./law/calc.js";
 import { searchRules } from "./law/rules.js";
@@ -134,6 +138,24 @@ export function buildServer(): McpServer {
     description: "После победы: сроки поставки, приёмки и оплаты от даты подписания.",
     inputSchema: { id: z.string(), signed_at: z.string().describe("ГГГГ-ММ-ДД") },
   }, async ({ id, signed_at }) => text(contractPlan(loadRun(id).report, signed_at).map(d => `${d.at} — ${d.title}: ${d.basis}`).join("\n")));
+
+  s.registerTool("draft_claim", {
+    title: "Претензия заказчику о просрочке оплаты",
+    description: "Черновик претензии с расчётом пени заказчика (1/300 ключевой ставки за день, ч. 5 ст. 34 44-ФЗ). Сохраняет DOCX в папку закупки. Ключевую ставку спросите у пользователя или возьмите с cbr.ru.",
+    inputSchema: { id: z.string(), amount: z.number().positive(), due_date: z.string().describe("последний день срока оплаты, ГГГГ-ММ-ДД"), key_rate: z.number().positive(), paid_at: z.string().optional(), contract_number: z.string().optional() },
+  }, async a => {
+    const { report, dir } = loadRun(a.id);
+    const t = claimDraft(report, { amount: a.amount, dueDate: a.due_date, keyRate: a.key_rate, paidAt: a.paid_at, contractNumber: a.contract_number }, loadProfile());
+    const f = join(dir, "черновик-претензии.docx");
+    writeFileSync(f, await draftDocx(t));
+    return text(`${t}\n\nDOCX: ${f}`);
+  });
+
+  s.registerTool("customer_history", {
+    title: "Аналитика заказчика",
+    description: "Последние закупки заказчика в открытой части ЕИС: этапы, доля отмен, типичная НМЦК, частые предметы.",
+    inputSchema: { customer: z.string().describe("название заказчика, как в извещении") },
+  }, async ({ customer }) => text(JSON.stringify(await customerHistory(customer), null, 2)));
 
   s.registerTool("list_tenders", { title: "Разобранные закупки", description: "Список ранее разобранных закупок.", inputSchema: {} }, async () => text(listRuns().map(x => `${x.id} · ${x.createdAt.slice(0, 10)} · ${x.title ?? ""}`).join("\n") || "Пока пусто."));
 

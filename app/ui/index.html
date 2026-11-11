@@ -32,9 +32,23 @@
     <div id="result" class="hidden">
       <div class="row wrap">
         <button class="ghost" data-open="html">Открыть отчёт</button><button class="ghost" data-open="dir">Папка</button>
-        <button class="ghost" data-open="ics">Сроки в календарь</button><button class="ghost" data-open="clarification">Черновик запроса</button><button class="ghost" data-open="complaint">Черновик жалобы</button>
+        <button class="ghost" data-open="ics">Сроки в календарь</button><button class="ghost" data-open="clarification">Черновик запроса</button><button class="ghost" data-open="complaint">Черновик жалобы</button><button class="ghost" data-open="declarations">Декларации</button>
+        <button class="ghost" id="r-watch">Следить за изменениями</button><button class="ghost" id="r-customer">Заказчик</button><button class="ghost" id="r-claim">Претензия об оплате</button>
         <button class="ghost" data-send="telegram">В Telegram</button><button class="ghost" data-send="bitrix24">В Битрикс24</button>
       </div>
+      <div class="panel hidden" id="claim">
+        <h2>Претензия заказчику о просрочке оплаты</h2>
+        <p class="disc">Пеня — 1/300 ключевой ставки ЦБ от неоплаченной суммы за каждый день (ч. 5 ст. 34 44-ФЗ). Ставку возьмите на cbr.ru.</p>
+        <div class="grid2">
+          <div><label for="c-amount">Неоплаченная сумма, ₽</label><input type="number" id="c-amount" min="0" step="0.01"></div>
+          <div><label for="c-due">Последний день срока оплаты</label><input type="date" id="c-due"></div>
+          <div><label for="c-paid">Дата оплаты (пусто — расчёт на сегодня)</label><input type="date" id="c-paid"></div>
+          <div><label for="c-rate">Ключевая ставка ЦБ, %</label><input type="number" id="c-rate" min="0" step="0.25"></div>
+          <div><label for="c-num">Номер контракта</label><input type="text" id="c-num"></div>
+        </div>
+        <div class="row"><button class="primary" id="c-make">Сделать черновик</button><span class="progress" id="c-msg"></span></div>
+      </div>
+      <div class="panel hidden" id="cust"><h2>Заказчик в ЕИС</h2><div class="progress" id="cust-msg"></div><div class="list" id="cust-list"></div></div>
       <iframe id="report" title="Отчёт"></iframe>
     </div>
     <p class="disc">Это помощник, а не юридическая консультация. Финальное решение и проверка — за вами. Помощник никогда не подаёт заявки, не подписывает документы и не работает с ЭЦП и паролями площадок.</p>
@@ -64,7 +78,7 @@
   <section id="tab-monitor" class="hidden">
     <div class="kicker">Официальный RSS ЕИС</div>
     <h1>Мониторинг закупок</h1>
-    <p class="lead small">Новые закупки на этапе подачи заявок по вашим словам. Уведомления — в Telegram и на почту (настройки). Работает, пока включён компьютер.</p>
+    <p class="lead small">Новые закупки на этапе подачи заявок по вашим словам и изменения в избранных закупках. Уведомления — в Telegram, на почту (настройки) и на рабочий стол. Работает, пока приложение открыто.</p>
     <div class="panel">
       <div class="grid2">
         <div><label>Слова</label><input type="text" id="m-text" placeholder="канцелярские товары"></div>
@@ -72,7 +86,11 @@
         <div><label>Цена от, ₽</label><input type="number" id="m-from"></div><div><label>Цена до, ₽</label><input type="number" id="m-to"></div>
       </div>
       <div class="row"><button class="ghost" id="m-add">Добавить запрос</button><button class="primary" id="m-run">Проверить сейчас</button><label class="inline"><input type="checkbox" id="m-notify"> отправить уведомления</label></div>
+      <div class="row"><label class="inline" for="m-every">Проверять автоматически, пока приложение открыто:</label><select id="m-every"><option value="0">выключено</option><option value="2">каждые 2 часа</option><option value="4">каждые 4 часа</option><option value="8">каждые 8 часов</option><option value="24">раз в сутки</option></select></div>
       <div class="list" id="m-queries"></div>
+      <h2>Избранные закупки</h2>
+      <p class="disc">Новые документы (изменения, разъяснения, протоколы), этап, сроки и цена — при каждой проверке. Добавить — кнопка «Следить за изменениями» в разборе закупки.</p>
+      <div class="list" id="m-watch"></div>
       <div class="progress" id="m-msg"></div>
       <div class="list" id="m-found"></div>
     </div>
@@ -117,10 +135,10 @@
     <p class="lead"><b>От 1 490 ₽ в месяц на компанию.</b> Ранний доступ — скидка 50 % на первый год.</p>
     <div class="cards">
       <div class="card"><h3>Работа командой <span class="status">скоро</span></h3><p>Роли «нашёл — оценил — согласовал — подал», комментарии и история решений по каждой закупке.</p></div>
-      <div class="card"><h3>Мониторинг без вас <span class="status">скоро</span></h3><p>Проверка ЕИС по расписанию и уведомления о новых подходящих закупках и изменениях в уже разобранных.</p></div>
-      <div class="card"><h3>Аналитика заказчика <span class="status">скоро</span></h3><p>Прошлые закупки заказчика, кто побеждал и с каким снижением цены — чтобы оценить шансы до подачи.</p></div>
-      <div class="card"><h3>Автозаполнение заявки <span class="status">скоро</span></h3><p>Формы и декларации из профиля компании, таблица характеристик товара по ТЗ.</p></div>
-      <div class="card"><h3>Исполнение контракта <span class="status">скоро</span></h3><p>Календарь этапов, контроль оплаты, черновики претензий и ответов заказчику.</p></div>
+      <div class="card"><h3>Мониторинг без вас <span class="status">скоро</span></h3><p>Проверка ЕИС на сервере, даже когда компьютер выключен, — для всего отдела. Сейчас бесплатно: проверка по расписанию, пока приложение открыто.</p></div>
+      <div class="card"><h3>Аналитика заказчика <span class="status">скоро</span></h3><p>Кто побеждал у заказчика, со каким снижением цены, кто конкуренты. Сейчас бесплатно: последние закупки заказчика, отмены, типичная цена.</p></div>
+      <div class="card"><h3>Автозаполнение заявки <span class="status">скоро</span></h3><p>Формы организатора и таблица характеристик из каталога ваших товаров. Сейчас бесплатно: черновик деклараций из профиля.</p></div>
+      <div class="card"><h3>Исполнение контракта <span class="status">скоро</span></h3><p>Контроль оплаты по всем контрактам отдела, ответы заказчику. Сейчас бесплатно: план исполнения и претензия с расчётом пени.</p></div>
       <div class="card"><h3>Больше подключений <span class="status">скоро</span></h3><p>amoCRM, 1С, Яндекс Трекер, общий календарь отдела.</p></div>
     </div>
     <div class="row wrap"><button class="primary" id="soon-want">Хочу ранний доступ</button><span class="progress">Откроется страница на GitHub: напишите, что вам важнее.</span></div>

@@ -61,3 +61,81 @@ describe("Производственный календарь РФ", () => {
     expect(workDaysBetween("2026-12-25", "2027-01-12")).toBe(5); // 28, 29, 30 дек, 11, 12 янв
   });
 });
+
+import { claimDraft, customerPenalty, declarationsDraft } from "../src/analyze/drafts.js";
+import { detectPlatform } from "../src/analyze/platform.js";
+import { analyzeDocs } from "../src/analyze/index.js";
+import { fromPlain } from "../src/docs/extract.js";
+import { summarize } from "../src/analytics.js";
+import { diff, snapshot } from "../src/watch.js";
+import { notifyText } from "../src/monitor.js";
+import type { CompanyProfile } from "../src/types.js";
+
+const profile: CompanyProfile = { name: "ООО «Офис-Снаб»", inn: "2130000000", okved: ["46.49"], msp: true, licenses: [], sro: [], contracts: [], products: [{ name: "Бумага А4", country: "Россия", registry: "10123456" }], regions: [] };
+const docs44 = [
+  fromPlain("Извещение.docx", "Извещение о проведении электронного аукциона\n\nНомер извещения: 0315300000126000777\n\nЗакупка у субъектов малого предпринимательства (ч. 3 ст. 30 Закона № 44-ФЗ)\n\nНачальная (максимальная) цена контракта: 486 300,00 руб."),
+  fromPlain("Описание объекта закупки.docx", "1. Бумага А4: плотность не менее 80 г/м2"),
+];
+
+describe("Площадки", () => {
+  it("коммерческая процедура B2B-Center: площадка, номер, предупреждение", () => {
+    const r = analyzeDocs([fromPlain("Документация.docx", "Запрос предложений на электронной площадке B2B-Center (www.b2b-center.ru)\n\nПроцедура № 4567890\n\nПредмет: поставка бумаги")]);
+    expect(detectPlatform([fromPlain("x", "Процедура № 4567890 на площадке b2b-center.ru")])).toMatchObject({ name: "B2B-Center", procedureNumber: "4567890" });
+    expect(r.law).toBeNull();
+    expect(r.warnings[0]).toMatch(/Коммерческая процедура на площадке B2B-Center \(№ 4567890\)/);
+    expect(r.fields.find(f => f.key === "platform")?.value).toBe("B2B-Center");
+  });
+  it("Сбербанк-АСТ в закупке 44-ФЗ — без предупреждения о коммерческой", () => {
+    const r = analyzeDocs([...docs44, fromPlain("Извещение 2.docx", "Электронная площадка: АО «Сбербанк-АСТ», utp.sberbank-ast.ru")]);
+    expect(r.law).toBe("44-ФЗ");
+    expect(r.warnings.some(w => /Коммерческая/.test(w))).toBe(false);
+  });
+});
+
+describe("Декларации и претензия", () => {
+  it("декларации: ст. 31, СМП, реестровый номер, без профиля — заготовки", () => {
+    const r = analyzeDocs(docs44);
+    const t = declarationsDraft(r, profile);
+    expect(t).toMatch(/ЧЕРНОВИК/);
+    expect(t).toMatch(/пунктами 3–5, 7–11 части 1 статьи 31/);
+    expect(t).toMatch(/малого предпринимательства/);
+    expect(t).toMatch(/Бумага А4: страна происхождения — Россия; номер реестровой записи — 10123456/);
+    expect(declarationsDraft(r, null)).toMatch(/\[Наименование участника\]/);
+  });
+  it("пеня заказчику: 1/300 ставки за каждый день со следующего после срока", () => {
+    expect(customerPenalty({ amount: 300000, dueDate: "2026-12-10", paidAt: "2026-12-20", keyRate: 15 })).toEqual({ days: 10, value: 1500, end: "2026-12-20" });
+  });
+  it("претензия: расчёт, норма 44-ФЗ, проверка ввода", () => {
+    const r = analyzeDocs(docs44);
+    const t = claimDraft(r, { amount: 300000, dueDate: "2026-12-10", paidAt: "2026-12-20", keyRate: 15, contractNumber: "15" }, profile);
+    expect(t).toMatch(/частью 5 статьи 34/);
+    expect(t).toMatch(/× 15 % \/ 300 × 10 дн\. \(с 11\.12\.2026 по 20\.12\.2026\) = 1\s500,00 ₽/);
+    expect(() => claimDraft(r, { amount: 0, dueDate: "2026-12-10", keyRate: 15 }, null)).toThrow(/сумму/);
+    expect(() => claimDraft(r, { amount: 10, dueDate: "2026-12-10", paidAt: "2026-12-09", keyRate: 15 }, null)).toThrow(/Просрочки нет/);
+  });
+});
+
+describe("Мониторинг: избранные и заказчик", () => {
+  const card = (docs: string[], stage: string) => ({ regNumber: "0315300000126000777", url: "https://zakupki.gov.ru/x", law: "44-ФЗ" as const, fields: [["Этап закупки", stage], ["Наименование объекта закупки", "Бумага"]] as [string, string][], docs: docs.map(t => ({ title: t, url: "" })) });
+  it("изменения: новые документы и этап", () => {
+    const a = snapshot(card(["Извещение.docx"], "Подача заявок")), b = snapshot(card(["Извещение.docx", "Разъяснение № 1.pdf"], "Работа комиссии"));
+    const d = diff(a, b);
+    expect(d[0]).toBe("Новые документы: Разъяснение № 1.pdf");
+    expect(d[1]).toMatch(/Этап закупки: было «Подача заявок», стало «Работа комиссии»/);
+    expect(diff(a, a)).toEqual([]);
+  });
+  it("текст уведомления: изменения и новые", () => {
+    const t = notifyText({ found: [{ regNumber: "1", title: "Бумага", url: "u", description: "" }], skipped: [], changes: [{ regNumber: "2", title: "Ручки", url: "v", changes: ["Новые документы: Протокол"] }], errors: [] });
+    expect(t).toMatch(/Изменения в избранных закупках: 1[\s\S]*Протокол[\s\S]*Новые закупки: 1/);
+  });
+  it("аналитика заказчика по RSS: этапы, отмены, медиана, частые слова", () => {
+    const it = (n: string, title: string, price: string, stage: string) => ({ regNumber: n, title, url: "u", description: `Наименование объекта закупки: ${title} Начальная цена контракта: ${price} Этап размещения: ${stage} Размещено: 01.11.2026` });
+    const s = summarize("МБУ Центр культуры", [it("1", "Поставка бумаги офисной", "100000.00", "Определение поставщика завершено"), it("2", "Поставка бумаги для принтеров", "300000.00", "Определение поставщика отменено"), it("3", "Охрана здания", "200000.00", "Подача заявок")]);
+    expect(s.total).toBe(3);
+    expect(s.medianPrice).toBe(200000);
+    expect(s.cancelledShare).toBe(33);
+    expect(s.byStage["Подача заявок"]).toBe(1);
+    expect(s.topWords[0]).toBe("бумаги");
+    expect(s.notes.some(n => /часто отменяет/.test(n))).toBe(true);
+  });
+});

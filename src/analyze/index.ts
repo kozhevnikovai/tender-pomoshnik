@@ -8,6 +8,7 @@ import { buildDeadlines } from "./deadlines.js";
 import { extractFields, fieldValue, find, flags, money } from "./fields.js";
 import { assessFit } from "./fit.js";
 import { extractRequirements } from "./requirements.js";
+import { detectPlatform } from "./platform.js";
 import { findRisks } from "./risks.js";
 
 export const DISCLAIMER = "Тендерный помощник — помощник, а не юридическая консультация. Сведения взяты из документов закупки и базы норм на дату обновления; пункты со статусом «проверить» сверьте с первоисточником. Решение об участии, проверка и подача заявки — за вами.";
@@ -69,6 +70,9 @@ export function analyzeDocs(input: DocText[], o: AnalyzeOptions = {}): Report {
   if (!docs.some(d => rank(d) === 2)) warnings.push("Нет проекта контракта — условия оплаты, приёмки и штрафов не проверены");
   if (!reqs.length) warnings.push("Характеристики товара из ТЗ не найдены (ТЗ в виде таблицы DOCX читается лучше всего)");
   for (const d of docs) warnings.push(...d.warnings.map(w => `${d.name}: ${w}`));
+  const platform = detectPlatform(docs);
+  if (platform && !fields.find(f => f.key === "platform")?.value) { const f = fields.find(x => x.key === "platform"); if (f) { f.value = platform.name; f.status = "ok"; } }
+  if (!law && platform) warnings.unshift(`Коммерческая процедура на площадке ${platform.name}${platform.procedureNumber ? ` (№ ${platform.procedureNumber})` : ""}: нормы 44-ФЗ и 223-ФЗ не применяются — сроки, обеспечение и штрафы проверяются только по документации организатора`);
 
   const risks = findRisks(fields, law, procedure, fl, reqs, o.now, docs);
   const fit = o.profile ? assessFit({ law, nmck, bidSecurity: bsPct != null && nmck ? nmck * bsPct / 100 : null, contractSecurity: csPct != null && nmck ? nmck * csPct / 100 : null, okpd2: fieldValue(fields, "okpd2") as string | null, place: fieldValue(fields, "place") as string | null, flags: fl, profile: o.profile }) : null;
@@ -77,7 +81,8 @@ export function analyzeDocs(input: DocText[], o: AnalyzeOptions = {}): Report {
   if (law === "44-ФЗ") {
     checklist.push({ item: "Предложение участника: характеристики товара строго по ТЗ (конкретные значения) и страна происхождения", law: [ref("44-43")] });
     checklist.push({ item: "Декларация о соответствии единым требованиям (ст. 31)", law: [ref("44-31")] });
-  } else checklist.push({ item: "Состав заявки — по документации и положению о закупке заказчика", law: [ref("223-polozhenie")] });
+  } else if (law === "223-ФЗ") checklist.push({ item: "Состав заявки — по документации и положению о закупке заказчика", law: [ref("223-polozhenie")] });
+  else checklist.push({ item: `Состав заявки и формы — по документации организатора${platform ? ` и регламенту площадки ${platform.name}` : ""}` });
   if (fl.smpOnly) checklist.push({ item: "Декларация о принадлежности к СМП/СОНКО", source: fl.smpOnly, law: [ref("44-30-1")] });
   if (fl.ban || fl.limit || fl.pref) checklist.push({ item: "Номера реестровых записей (промышленная продукция / ПО) для нацрежима", source: fl.ban ?? fl.limit ?? fl.pref, law: [ref("1875-proof")] });
   if (fl.license) checklist.push({ item: "Лицензия (номер, дата, вид деятельности)", source: fl.license });

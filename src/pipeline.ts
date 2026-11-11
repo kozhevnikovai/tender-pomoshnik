@@ -2,7 +2,7 @@
 // Результат — папка с отчётом HTML/MD/JSON, календарём .ics и черновиками писем.
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
-import { clarificationDraft, complaintDraft } from "./analyze/drafts.js";
+import { clarificationDraft, complaintDraft, declarationsDraft } from "./analyze/drafts.js";
 import { analyzeDocs } from "./analyze/index.js";
 import { extractFile } from "./docs/extract.js";
 import { loadConfig, loadProfile } from "./config.js";
@@ -53,6 +53,7 @@ export async function run(i: RunInput): Promise<RunResult> {
   const out: Record<string, string> = {
     html: join(dir, "отчёт.html"), md: join(dir, "отчёт.md"), json: join(dir, "отчёт.json"), ics: join(dir, "сроки.ics"),
     clarification: join(dir, "черновик-запрос-разъяснений.docx"), complaint: join(dir, "черновик-жалобы-ФАС.docx"),
+    declarations: join(dir, "черновик-декларации.docx"),
   };
   writeFileSync(out.html, toHtml(report, drafts));
   writeFileSync(out.md, toMarkdown(report));
@@ -60,6 +61,7 @@ export async function run(i: RunInput): Promise<RunResult> {
   writeFileSync(out.ics, toIcs(report));
   writeFileSync(out.clarification, await draftDocx(drafts.clarification));
   writeFileSync(out.complaint, await draftDocx(drafts.complaint));
+  writeFileSync(out.declarations, await draftDocx(declarationsDraft(report, profile ?? null)));
   appendRegistry(join(c.outputDir, "реестр-закупок.csv"), report, out.html);
   return { report, dir, files: out, docs };
 }

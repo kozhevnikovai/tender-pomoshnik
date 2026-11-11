@@ -1,6 +1,6 @@
 {
- "version": "2026.11.09",
- "asOf": "2026-11-09",
+ "version": "2026.11.12",
+ "asOf": "2026-11-12",
  "note": "Карточки норм для Тендерного помощника. Текст карточки — пересказ, не цитата закона. status: verified — подтверждено двумя и более источниками на дату asOf; check — один источник или расхождения, ответ помечается «проверить». Ссылки ведут на первоисточник (КонсультантПлюс, Гарант) или на разбор, где норма процитирована.",
  "rules": [
   {
@@ -339,6 +339,25 @@
    "sources": [
     "https://ppt.ru/columns/goodwin/samaya-rasprostranennaya-oshibka-v-raschete-peni-po-44-fz",
     "https://ppt.ru/art/zakupki/kakie-shtrafy-predusmotreny-dlya-postavshchikov-po-44-fz"
+   ]
+  },
+  {
+   "id": "44-34-5",
+   "act": "44-ФЗ",
+   "ref": "ч. 5 ст. 34",
+   "topic": "неустойка",
+   "title": "Пеня заказчика за просрочку оплаты",
+   "summary": "Если заказчик просрочил оплату, поставщик вправе потребовать пеню: 1/300 ключевой ставки ЦБ, действующей на дату уплаты пени, от не уплаченной в срок суммы за каждый день просрочки, начиная со дня, следующего за днём окончания срока оплаты. Для ресурсоснабжения размер может быть иным.",
+   "params": {
+    "fraction": 300
+   },
+   "validFrom": "2013-04-05",
+   "validTo": null,
+   "status": "verified",
+   "sources": [
+    "https://www.consultant.ru/law/podborki/44_fz_odna_trehsotaya/",
+    "https://ppt.ru/art/44-fz/kak-rasschitat-neustoyku-po-44-fz",
+    "https://t-j.ru/kak-poluchit-peni-s-goszakazchika-za-prosrochku-oplaty/"
    ]
   },
   {

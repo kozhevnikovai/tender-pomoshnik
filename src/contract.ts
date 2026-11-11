@@ -25,7 +25,7 @@ export function contractPlan(r: Report, signedAt: string): Deadline[] {
   if (base) {
     const n = pay?.[0] ?? rule("44-34-13.1").params.workDays;
     out.push({ title: "Оплата — не позднее", at: addDays(base, n, pay ? pay[1] : true), basis: pay ? `${n} ${pay[1] ? "рабочих" : "календарных"} дн. после приёмки (из контракта)` : "7 рабочих дней после приёмки (ч. 13.1 ст. 34)", law: r.law === "44-ФЗ" ? [ref("44-34-13.1")] : undefined, source: f("payDays")?.source });
-    out.push({ title: "Просрочка оплаты: начисляйте пени заказчику", at: addDays(base, n + 1, pay ? pay[1] : true), basis: "1/300 ключевой ставки за день (ч. 5 ст. 34)", law: r.law === "44-ФЗ" ? [ref("44-34-7")] : undefined });
+    out.push({ title: "Просрочка оплаты: начисляйте пени заказчику", at: addDays(base, n + 1, pay ? pay[1] : true), basis: "1/300 ключевой ставки за день (ч. 5 ст. 34) — претензия: tender claim", law: r.law === "44-ФЗ" ? [ref("44-34-5")] : undefined });
   }
   return out;
 }

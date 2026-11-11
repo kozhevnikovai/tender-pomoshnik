@@ -15,7 +15,8 @@ export interface Config {
   ocr: boolean;
   llm: LLMOptions;
   outputDir: string;
-  monitor: { queries: MonitorQuery[]; aiFilter: boolean };
+  /** everyHours — проверка по расписанию, пока приложение запущено (0 — выключено) */
+  monitor: { queries: MonitorQuery[]; aiFilter: boolean; everyHours?: number };
   telegram?: { botToken: string; chatId: string };
   email?: { host: string; port: number; secure?: boolean; user: string; pass: string; to: string };
   bitrix24?: { webhook: string };

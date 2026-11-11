@@ -157,12 +157,13 @@ export async function downloadDocs(c: NoticeCard, dir: string, limit = 20, warni
   return paths;
 }
 
-export interface SearchQuery { text: string; law44?: boolean; law223?: boolean; priceFrom?: number; priceTo?: number; regions?: string[]; okpd2?: string[] }
+export interface SearchQuery { text: string; law44?: boolean; law223?: boolean; priceFrom?: number; priceTo?: number; regions?: string[]; okpd2?: string[]; /** все этапы, а не только подача заявок (для истории заказчика) */ allStages?: boolean; exact?: boolean }
 export interface SearchItem { regNumber: string; title: string; url: string; description: string; published?: string }
 
 /** Поиск по реестру закупок через официальный RSS ЕИС (этап «Подача заявок») */
 export async function searchRss(q: SearchQuery): Promise<SearchItem[]> {
-  const p = new URLSearchParams({ searchString: q.text, morphology: "on", af: "on", recordsPerPage: "_50", sortBy: "PUBLISH_DATE", sortDirection: "false" });
+  const p = new URLSearchParams({ searchString: q.exact ? `"${q.text.replace(/"/g, "")}"` : q.text, morphology: "on", af: "on", recordsPerPage: "_50", sortBy: "PUBLISH_DATE", sortDirection: "false" });
+  if (q.allStages) { p.set("ca", "on"); p.set("pc", "on"); p.set("pa", "on"); }
   if (q.law44 !== false) p.set("fz44", "on");
   if (q.law223 !== false) p.set("fz223", "on");
   if (q.priceFrom) p.set("priceFromGeneral", String(q.priceFrom));
