@@ -2,7 +2,8 @@
 // По умолчанию — локальная модель через llama.cpp: ничего не уходит в сеть.
 // Облачная модель (OpenAI-совместимый API: YandexGPT, OpenRouter, свой сервер) — только если пользователь включил её сам.
 import { netFetch } from "./net.js";
-import { missing, modelPath, PACKS } from "./models.js";
+import { getModel, loadLocalLLM } from "@kozhevnikovai/local-ai";
+import { missing, modelPath, PACKS, selectLlm } from "./models.js";
 import { maskText } from "./privacy.js";
 
 export interface LLM {
@@ -16,6 +17,8 @@ export interface LLMOptions {
   provider?: "local" | "claude" | "openai";
   /** Маскировать персональные данные перед отправкой в облако (по умолчанию да) */
   mask?: boolean;
+  /** Модель из каталога local-ai: qwen3-4b (лёгкая) или qwen3-14b (мощная) */
+  localModel?: string;
   /** Путь к своей GGUF-модели (local) */
   modelFile?: string;
   /** Размер контекста, токенов (local) */
@@ -33,35 +36,11 @@ export async function createLLM(o: LLMOptions = {}): Promise<LLM> {
 }
 
 async function local(o: LLMOptions): Promise<LLM> {
-  const big = !o.modelFile && !missing(["llm-8b"]).length;
-  const file = o.modelFile ?? modelPath((big ? PACKS["llm-8b"] : PACKS.llm).files[0].path);
-  if (!o.modelFile && !big && missing(["llm"]).length) throw new Error("Нет языковой модели. Запустите: tender models");
-  const { getLlama, LlamaChatSession } = await import("node-llama-cpp");
-  const gpu = (o.gpu ?? process.env.TENDER_GPU ?? "auto") as any;
-  const llama = await getLlama({ gpu: gpu === "cpu" ? false : gpu, logLevel: "error" as any });
-  const model = await llama.loadModel({ modelPath: file });
-  const context = await model.createContext({ contextSize: { max: o.contextSize ?? 12288 } });
-  const sequence = context.getSequence();
-  const device = llama.gpu ? `GPU (${llama.gpu})` : "CPU";
-  return {
-    name: `${file.split(/[\\/]/).pop()} · ${device}`,
-    async json<T>(system: string, user: string, schema: object, maxTokens = 3000) {
-      const grammar = await llama.createGrammarForJsonSchema(schema as any);
-      // маленькая модель иногда зацикливается внутри строки — штраф за повторы, при сбое вторая попытка строже
-      for (const [i, penalty] of [1.1, 1.25].entries()) {
-        await sequence.clearHistory();
-        const session = new LlamaChatSession({ contextSequence: sequence, systemPrompt: system, autoDisposeSequence: false });
-        try {
-          const res = await session.prompt(user, { grammar, temperature: i ? 0 : 0.1, maxTokens, repeatPenalty: { penalty, lastTokens: 128, frequencyPenalty: 0.1 } });
-          return grammar.parse(res) as T;
-        } catch (e) {
-          if (i) throw new Error(`Модель не смогла выдать корректный ответ: ${(e as Error).message}`);
-        } finally { session.dispose({ disposeSequence: false }); }
-      }
-      throw new Error("недостижимо");
-    },
-    async dispose() { await context.dispose(); await model.dispose(); await llama.dispose(); },
-  };
+  const id = selectLlm(o.localModel ?? process.env.TENDER_LLM_MODEL);
+  const file = o.modelFile ?? modelPath(PACKS.llm.files[0].path);
+  if (!o.modelFile && missing(["llm"]).length) throw new Error("Нет языковой модели. Запустите: tender models");
+  const m = await loadLocalLLM({ modelFile: file, gpu: o.gpu ?? process.env.TENDER_GPU ?? "auto", contextSize: o.contextSize ?? 12288 });
+  return { name: o.modelFile ? m.name : `${getModel(id).title} · ${m.device}`, json: m.json, dispose: m.dispose };
 }
 
 function openai(o: LLMOptions): LLM {

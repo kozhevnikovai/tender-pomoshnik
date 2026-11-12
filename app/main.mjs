@@ -1,5 +1,5 @@
 // Тендерный помощник — настольное приложение (Electron). Главный процесс: окно и фоновый обработчик.
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, utilityProcess } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell, utilityProcess } from "electron";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
@@ -90,7 +90,7 @@ ipcMain.handle("core", async (_e, method, args) => {
 });
 ipcMain.handle("version", () => app.getVersion());
 ipcMain.handle("pick-files", async () => {
-  const r = await dialog.showOpenDialog(win, { properties: ["openFile", "multiSelections"], filters: [{ name: "Документы закупки", extensions: ["pdf", "docx", "doc", "odt", "zip", "txt", "png", "jpg", "jpeg", "tif", "tiff"] }] });
+  const r = await dialog.showOpenDialog(win, { properties: ["openFile", "multiSelections"], filters: [{ name: "Документы закупки", extensions: ["pdf", "docx", "doc", "odt", "rtf", "xlsx", "xls", "ods", "zip", "txt", "png", "jpg", "jpeg", "tif", "tiff"] }] });
   return r.canceled ? [] : r.filePaths;
 });
 ipcMain.handle("pick-dir", async () => { const r = await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"] }); return r.canceled ? null : r.filePaths[0]; });
@@ -105,7 +105,22 @@ ipcMain.handle("open", (_e, p) => {
 });
 ipcMain.handle("open-url", (_e, u) => { if (/^https:\/\//.test(u)) shell.openExternal(u); });
 
-app.whenReady().then(() => { if (!gotLock) return; migrateSecrets(); createWindow(); if (process.env.TENDER_SMOKE) smoke(process.env.TENDER_SMOKE); });
+// Мониторинг по расписанию: пока приложение запущено, раз в 10 минут спрашиваем обработчик, не пора ли проверить ЕИС
+async function autoMonitor() {
+  try {
+    const r = await call("autoMonitor", {});
+    if (!r || (!r.found && !r.changes)) return;
+    const body = [r.changes && `Изменения в избранных: ${r.changed.join("; ")}`, r.found && `Новые закупки: ${r.found} — ${r.items.join("; ")}`].filter(Boolean).join("\n");
+    if (Notification.isSupported()) { const n = new Notification({ title: "Тендерный помощник", body: body.slice(0, 250) }); n.on("click", () => { win?.show(); win?.webContents.send("goto", "monitor"); }); n.show(); }
+    win?.webContents.send("auto-monitor", r);
+  } catch { /* нет сети или ЕИС недоступна — попробуем в следующий раз */ }
+}
+
+app.whenReady().then(() => {
+  if (!gotLock) return; migrateSecrets(); createWindow();
+  if (process.env.TENDER_SMOKE) return smoke(process.env.TENDER_SMOKE);
+  setTimeout(autoMonitor, 60_000); setInterval(autoMonitor, 10 * 60_000);
+});
 
 // Самопроверка собранного приложения (CI): окно, фоновый обработчик, разбор файлов, отчёт, скриншот
 async function smoke(files) {

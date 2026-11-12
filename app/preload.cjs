@@ -9,5 +9,5 @@ contextBridge.exposeInMainWorld("tp", {
   openUrl: u => ipcRenderer.invoke("open-url", u),
   pathOf: file => webUtils.getPathForFile(file),
   version: () => ipcRenderer.invoke("version"),
-  on: (ch, fn) => { if (["progress", "net"].includes(ch)) ipcRenderer.on(ch, (_e, m) => fn(m)); },
+  on: (ch, fn) => { if (["progress", "net", "auto-monitor", "goto"].includes(ch)) ipcRenderer.on(ch, (_e, m) => fn(m)); },
 });

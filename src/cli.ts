@@ -7,12 +7,17 @@ import { checkOffer } from "./analyze/requirements.js";
 import { ask } from "./ask.js";
 import { EMPTY_PROFILE, loadConfig, loadProfile, saveConfig, saveProfile } from "./config.js";
 import { contractPlan } from "./contract.js";
+import { claimDraft } from "./analyze/drafts.js";
+import { draftDocx } from "./export/docx.js";
 import { toIcs } from "./export/text.js";
 import { antidumping, bidSecurity, contractSecurity, supplierFine } from "./law/calc.js";
 import { rules, searchRules } from "./law/rules.js";
 import { createLLM } from "./llm.js";
-import { download, missing } from "./models.js";
+import { detectHardware, recommend } from "@kozhevnikovai/local-ai";
+import { download, LLM_MODELS, missing, PACKS, selectLlm } from "./models.js";
 import { runMonitor } from "./monitor.js";
+import { setWatched } from "./watch.js";
+import { customerHistory } from "./analytics.js";
 import { setOffline } from "./net.js";
 import { listRuns, loadRun, run } from "./pipeline.js";
 import type { Law, Procedure } from "./types.js";
@@ -67,6 +72,17 @@ p.command("check").argument("<id>").argument("<предложение.json>", "{
     process.exitCode = bad ? 1 : 0;
   });
 
+p.command("claim").argument("<id>").requiredOption("--amount <₽>", "не уплаченная в срок сумма").requiredOption("--due <ГГГГ-ММ-ДД>", "последний день срока оплаты").requiredOption("--rate <%>", "ключевая ставка ЦБ, %").option("--paid <ГГГГ-ММ-ДД>", "дата оплаты (без неё — расчёт на сегодня)").option("--contract <номер>").option("--contract-date <ГГГГ-ММ-ДД>")
+  .description("Претензия заказчику о просрочке оплаты с расчётом пени (DOCX)")
+  .action(async (id: string, o) => {
+    const { report, dir } = loadRun(id, { anyPath: true });
+    const t = claimDraft(report, { amount: Number(String(o.amount).replace(/\s/g, "").replace(",", ".")), dueDate: o.due, paidAt: o.paid, keyRate: Number(String(o.rate).replace(",", ".")), contractNumber: o.contract, contractDate: o.contractDate }, loadProfile());
+    const f = join(dir, "черновик-претензии.docx");
+    writeFileSync(f, await draftDocx(t));
+    console.log(t.split("\n").find(l => l.includes(" / 300 ×")));
+    console.log(`Черновик: ${f}`);
+  });
+
 p.command("contract").argument("<id>").requiredOption("--signed <ГГГГ-ММ-ДД>").description("План исполнения контракта после победы (.ics)")
   .action((id: string, o) => {
     const { report, dir } = loadRun(id, { anyPath: true });
@@ -90,9 +106,23 @@ mon.command("add").argument("<слова>").option("--minus <слова>", "че
 mon.command("list").action(() => console.log(JSON.stringify(loadConfig().monitor, null, 2)));
 mon.command("run").option("--notify", "отправить в Telegram/почту").action(async o => {
   const r = await runMonitor({ notify: o.notify });
+  for (const x of r.changes) console.log(`* ${x.regNumber}  ${x.title ?? ""}\n${x.changes.map(c => `  — ${c}`).join("\n")}`);
   for (const x of r.found) console.log(`+ ${x.regNumber}  ${x.title}\n  ${x.url}`);
-  console.log(`\nНовых: ${r.found.length}, отсеяно: ${r.skipped.length}`);
+  for (const e of r.errors) console.log(`! ${e}`);
+  console.log(`\nНовых: ${r.found.length}, отсеяно: ${r.skipped.length}, изменений в избранных: ${r.changes.length}`);
 });
+mon.command("watch").argument("<номер>").option("--off", "перестать следить").description("Следить за изменениями закупки: новые документы, разъяснения, протоколы, сроки")
+  .action((reg: string, o) => { const l = setWatched(reg.replace(/\D/g, ""), !o.off); console.log(`Избранных закупок: ${l.length}`); });
+
+p.command("customer").argument("<название...>").description("Аналитика заказчика: последние закупки в ЕИС, этапы, отмены, типичная цена")
+  .action(async (w: string[]) => {
+    const s = await customerHistory(w.join(" "));
+    console.log(`${s.customer}: закупок ${s.total}${s.medianPrice ? `, медианная НМЦК ${s.medianPrice.toLocaleString("ru-RU")} ₽` : ""}${s.cancelledShare != null ? `, отменено ${s.cancelledShare}%` : ""}`);
+    console.log(`Этапы: ${Object.entries(s.byStage).map(([k, v]) => `${k} — ${v}`).join("; ")}`);
+    if (s.topWords.length) console.log(`Чаще всего закупает: ${s.topWords.join(", ")}`);
+    for (const r of s.recent.slice(0, 10)) console.log(`  ${r.published?.slice(0, 16) ?? ""}  ${r.regNumber}  ${r.title.slice(0, 80)}${r.price ? ` · ${r.price.toLocaleString("ru-RU")} ₽` : ""}`);
+    for (const n of s.notes) console.log(`ℹ ${n}`);
+  });
 
 p.command("rules").argument("[слова...]").option("--all").description("База норм: поиск по словам").action((w: string[], o) => {
   const list = o.all || !w.length ? rules().rules : searchRules(w.join(" "));
@@ -100,11 +130,19 @@ p.command("rules").argument("[слова...]").option("--all").description("Ба
   for (const r of list) console.log(`${r.act}, ${r.ref} — ${r.title}${r.status === "check" ? " [проверить]" : ""}\n  ${r.summary}\n  ${r.sources.join("\n  ")}\n`);
 });
 
-p.command("models").option("--8b", "дополнительно Qwen3 8B (точнее, нужна видеокарта 8 ГБ)").description("Скачать модели: OCR и локальную языковую модель").action(async o => {
-  const packs = ["ocr", "llm", ...(o["8b"] ? ["llm-8b"] : [])];
+p.command("models").option("--model <id>", `языковая модель: ${LLM_MODELS.map(m => `${m.id} (${m.title})`).join(", ")}`).option("--no-llm", "только OCR, без языковой модели").description("Скачать модели: OCR и локальную языковую модель (выбирается по компьютеру)").action(async o => {
+  let id: string | undefined = o.model ?? loadConfig().llm.localModel;
+  if (!id && o.llm !== false) {
+    const r = recommend(await detectHardware());
+    console.log(r.reason);
+    id = r.model.id;
+  }
+  if (id && o.llm !== false) { const ok = selectLlm(id); if (ok !== loadConfig().llm.localModel) saveConfig({ llm: { localModel: ok } }); }
+  const packs = o.llm === false ? ["ocr"] : ["ocr", "llm"];
   if (!missing(packs).length) return console.log("Модели уже скачаны");
+  for (const id of packs) console.log(`• ${PACKS[id].title} — ${PACKS[id].license}`);
   await download(packs, e => process.stderr.write(`\r${e.file}: ${Math.round(e.done / e.total * 100)}%   `));
-  console.log("\nГотово");
+  console.log("\nГотово. Дальше разбор работает без интернета.");
 });
 
 p.command("mcp").description("MCP-сервер для Claude Desktop и других клиентов").action(async () => { const { startMcp } = await import("./mcp.js"); await startMcp(); });

@@ -12,7 +12,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
 
 const size = b => b >= 1073741824 ? (b / 1073741824).toFixed(1).replace(".", ",") + " ГБ" : b >= 1048576 ? Math.round(b / 1048576) + " МБ" : Math.max(1, Math.round(b / 1024)) + " КБ";
 const fmt = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h} ч ${m} мин` : m ? `${m} мин` : `${s % 60} с`; };
-const FILE_NAMES = { "rus.traineddata": "распознавание сканов (русский)", "eng.traineddata": "распознавание сканов (английский)", "llm/qwen3-4b-instruct-2507-q4_k_m.gguf": "языковая модель 4B", "llm/qwen3-8b-q4_k_m.gguf": "языковая модель 8B" };
+const FILE_NAMES = { "rus.traineddata": "распознавание сканов (русский)", "eng.traineddata": "распознавание сканов (английский)", "llm/qwen3-4b-instruct-2507-q4_k_m.gguf": "языковая модель Qwen3 4B", "llm/Qwen3-14B-Q4_K_M.gguf": "языковая модель Qwen3 14B" };
 let dlFrom = null;
 tp.on("progress", m => {
   if (m.stage === "download") {
@@ -31,7 +31,7 @@ $("job").onclick = () => document.querySelector('[data-tab="settings"]').click()
 tp.on("net", m => { $("netInfo").textContent = `в облако: ${m.sentBytes} байт`; $("net").classList.toggle("sent", m.sentBytes > 0); });
 
 // Файлы
-const OK_EXT = /\.(pdf|docx|doc|odt|zip|txt|md|png|jpe?g|tiff?|bmp|webp)$/i;
+const OK_EXT = /\.(pdf|docx|doc|odt|rtf|xlsx|xls|ods|zip|txt|md|png|jpe?g|tiff?|bmp|webp)$/i;
 const showFiles = () => { files = [...new Set(files)]; $("files").textContent = files.map(f => f.split(/[\\/]/).pop()).join(" · "); $("clear-files").classList.toggle("hidden", !files.length); };
 $("clear-files").onclick = () => { files = []; showFiles(); };
 $("pick").onclick = async e => { e.preventDefault(); files = [...files, ...await tp.pickFiles()]; showFiles(); };
@@ -43,7 +43,7 @@ drop.ondrop = e => {
   const all = [...e.dataTransfer.files].map(f => tp.pathOf(f)).filter(Boolean);
   const bad = all.filter(f => !OK_EXT.test(f));
   files = [...files, ...all.filter(f => OK_EXT.test(f))]; showFiles();
-  $("err").textContent = bad.length ? `Пропущены неподходящие файлы: ${bad.map(f => f.split(/[\\/]/).pop()).join(", ")}. Подойдут PDF, DOCX, DOC, ODT, ZIP, TXT и сканы.` : "";
+  $("err").textContent = bad.length ? `Пропущены неподходящие файлы: ${bad.map(f => f.split(/[\\/]/).pop()).join(", ")}. Подойдут PDF, DOCX, DOC, ODT, RTF, Excel, ZIP, TXT и сканы.` : "";
 };
 // файл, брошенный мимо зоны, не должен открываться в окне
 window.addEventListener("dragover", e => e.preventDefault()); window.addEventListener("drop", e => e.preventDefault());
@@ -53,6 +53,49 @@ window.showReport = r => {
   document.querySelectorAll("[data-send]").forEach(b => (b.disabled = false));
   $("result").classList.remove("hidden");
   $("report").src = "file://" + r.files.html.replace(/\\/g, "/");
+  $("claim").classList.add("hidden"); $("cust").classList.add("hidden");
+  const reg = r.report.noticeNumber;
+  $("r-watch").disabled = !/^\d{11}$|^\d{19}$/.test(reg ?? "");
+  $("r-watch").textContent = watched.includes(reg) ? "Не следить" : "Следить за изменениями";
+  $("r-customer").disabled = !r.report.fields.find(f => f.key === "customer")?.value;
+};
+const errText = e => e.message.replace(/^Error invoking remote method 'core': Error: /, "");
+let watched = [];
+const loadWatched = async () => { const l = await tp.core("watchList", {}); watched = l.map(x => x.regNumber); renderWatch(l); };
+function renderWatch(l) {
+  $("m-watch").innerHTML = l.map(x => `<div><span>${esc(x.title ?? x.regNumber)}<br><small>${esc(x.regNumber)}${x.checkedAt ? ` · проверено ${esc(x.checkedAt.slice(0, 16).replace("T", " "))}` : " · ещё не проверялось"}</small></span><button class="ghost" data-unwatch="${esc(x.regNumber)}">Не следить</button></div>`).join("") || "<div><small>Пока нет — откройте разбор закупки ЕИС и нажмите «Следить за изменениями»</small></div>";
+  document.querySelectorAll("[data-unwatch]").forEach(b => b.onclick = async () => { await tp.core("watch", { regNumber: b.dataset.unwatch, on: false }); loadWatched(); });
+}
+$("r-watch").onclick = async () => {
+  if (!current) return;
+  const reg = current.report.noticeNumber, on = !watched.includes(reg);
+  try { watched = await tp.core("watch", { regNumber: reg, on, title: current.report.title ?? undefined }); $("r-watch").textContent = on ? "Не следить" : "Следить за изменениями"; $("progress").textContent = on ? "Закупка в избранном: изменения — при проверке мониторинга" : "Убрано из избранного"; loadWatched(); }
+  catch (e) { $("err").textContent = errText(e); }
+};
+$("r-claim").onclick = () => $("claim").classList.toggle("hidden");
+$("c-make").onclick = async () => {
+  if (!current || $("c-make").disabled) return;
+  $("c-make").disabled = true; $("c-msg").textContent = "";
+  try {
+    const input = { amount: +$("c-amount").value, dueDate: $("c-due").value, paidAt: $("c-paid").value || undefined, keyRate: +String($("c-rate").value).replace(",", "."), contractNumber: $("c-num").value.trim() || undefined };
+    const r = await tp.core("claim", { id: current.dir, input });
+    $("c-msg").textContent = r.line ?? "Готово"; tp.open(r.file);
+  } catch (e) { $("c-msg").textContent = "✕ " + errText(e); }
+  $("c-make").disabled = false;
+};
+$("r-customer").onclick = async () => {
+  if (!current || $("r-customer").disabled) return;
+  const name = current.report.fields.find(f => f.key === "customer")?.value;
+  $("cust").classList.remove("hidden"); $("cust-list").innerHTML = ""; $("cust-msg").textContent = "· ищу закупки заказчика в ЕИС…";
+  $("r-customer").disabled = true;
+  try {
+    const s = await tp.core("customer", { name });
+    const rub = n => n.toLocaleString("ru-RU") + " ₽";
+    $("cust-msg").innerHTML = `<b>${esc(s.customer)}</b> — закупок: ${s.total}${s.medianPrice ? `, медианная НМЦК ${rub(s.medianPrice)}` : ""}${s.cancelledShare != null ? `, отменено ${s.cancelledShare}%` : ""}${s.topWords.length ? `<br><small>Чаще всего: ${esc(s.topWords.join(", "))}</small>` : ""}${s.notes.map(n => `<br><small>${esc(n)}</small>`).join("")}`;
+    $("cust-list").innerHTML = s.recent.map(x => `<div><span>${esc(x.title)}<br><small>${esc(x.regNumber)}${x.stage ? ` · ${esc(x.stage)}` : ""}${x.price ? ` · ${rub(x.price)}` : ""}${x.published ? ` · ${esc(x.published.slice(0, 16))}` : ""}</small></span><button class="ghost" data-url="${esc(x.url)}">В ЕИС</button></div>`).join("");
+    $("cust-list").querySelectorAll("[data-url]").forEach(b => b.onclick = () => tp.openUrl(b.dataset.url));
+  } catch (e) { $("cust-msg").textContent = "✕ " + errText(e); }
+  $("r-customer").disabled = false;
 };
 
 $("go").onclick = async () => {
@@ -111,11 +154,17 @@ $("m-run").onclick = async () => {
   $("m-msg").textContent = "· проверяю ЕИС…";
   try {
     const r = await tp.core("monitor", { notify: $("m-notify").checked });
-    $("m-msg").textContent = `Новых: ${r.found.length}, отсеяно: ${r.skipped.length}`;
-    $("m-found").innerHTML = r.found.map(x => `<div><span>${esc(x.title)}<br><small>${esc(x.regNumber)}</small></span><button class="ghost" data-reg="${esc(x.regNumber)}">Разобрать</button></div>`).join("");
+    $("m-msg").textContent = `Новых: ${r.found.length}, отсеяно: ${r.skipped.length}, изменений в избранных: ${r.changes.length}${r.errors.length ? ` · ошибок: ${r.errors.length}` : ""}`;
+    loadWatched();
+    $("m-found").innerHTML = r.changes.map(x => `<div><span><b>Изменилось:</b> ${esc(x.title ?? x.regNumber)}<br><small>${x.changes.map(esc).join("<br>")}</small></span><button class="ghost" data-url="${esc(x.url)}">В ЕИС</button></div>`).join("") + r.found.map(x => `<div><span>${esc(x.title)}<br><small>${esc(x.regNumber)}</small></span><button class="ghost" data-reg="${esc(x.regNumber)}">Разобрать</button></div>`).join("");
+    $("m-found").querySelectorAll("[data-url]").forEach(b => b.onclick = () => tp.openUrl(b.dataset.url));
     document.querySelectorAll("[data-reg]").forEach(b => b.onclick = () => { $("reg").value = b.dataset.reg; document.querySelector('[data-tab="tender"]').click(); $("go").click(); });
   } catch (e) { $("m-msg").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, ""); }
 };
+
+$("m-every").onchange = async () => { state.config = await tp.core("saveConfig", { patch: { monitor: { ...state.config.monitor, everyHours: +$("m-every").value } } }); $("m-msg").textContent = +$("m-every").value ? "Автопроверка включена — первая через минуту после запуска, затем по расписанию" : "Автопроверка выключена"; };
+tp.on("auto-monitor", r => { $("m-msg").textContent = `Автопроверка: новых ${r.found}, изменений в избранных ${r.changes}`; loadWatched(); });
+tp.on("goto", t => document.querySelector(`[data-tab="${t}"]`)?.click());
 
 // Архив
 async function loadArchive() {
@@ -165,20 +214,33 @@ document.querySelectorAll("[data-test]").forEach(b => b.onclick = async () => {
 });
 document.querySelectorAll("[data-clear]").forEach(b => b.onclick = async () => { state.config = await tp.core("saveConfig", { patch: { [b.dataset.clear]: null } }); fillSettings(state.config); $("s-msg").textContent = "Подключение отключено"; });
 const renderPacks = packs => { $("packs").innerHTML = packs.map(p => `<li><span>${esc(p.title)} <small>· ${esc(p.license)}</small></span><b>${p.missing ? size(p.size) : "✓ скачано"}</b></li>`).join(""); };
-const dl = big => async () => {
-  if ($("s-models").disabled) return;
-  $("s-models").disabled = $("s-models8").disabled = true; dlFrom = null;
-  $("dl-info").textContent = "· подготовка загрузки…";
-  try { await tp.core("download", { big }); $("dl-info").textContent = "Модели скачаны — интернет для разбора больше не нужен"; renderPacks((await tp.core("status", {})).packs); }
-  catch (e) { $("dl-info").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, "") + " Нажмите ещё раз — загрузка продолжится с того же места."; }
-  $("s-models").disabled = $("s-models8").disabled = false; $("job").classList.add("hidden");
+const TIER = { light: "Лёгкая", strong: "Мощная" };
+const renderLlm = m => {
+  $("s-llm").innerHTML = m.options.map(o => `<option value="${esc(o.id)}"${o.id === m.selected ? " selected" : ""}>${esc(TIER[o.tier])}: ${esc(o.title)} · ${size(o.size)}${o.id === m.recommended ? " — рекомендуем" : ""}${o.ok ? "" : " — не хватит памяти"}</option>`).join("");
+  const o = m.options.find(x => x.id === m.selected);
+  $("s-llm-why").textContent = `${m.reason} ${o ? o.note + "." : ""}${o && !o.ok ? " Внимание: " + o.why + "." : ""} Файлы другой модели не удаляются.`;
 };
-$("s-models").onclick = dl(false); $("s-models8").onclick = dl(true);
+$("s-llm").onchange = async () => {
+  try { const r = await tp.core("setModel", { id: $("s-llm").value }); renderLlm(r.llm); renderPacks(r.packs); $("dl-info").textContent = r.left ? `Нужно скачать ${size(r.left)}` : "Модель уже скачана"; }
+  catch (e) { $("dl-info").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, ""); renderLlm(state.llm); }
+};
+const dl = () => async () => {
+  if ($("s-models").disabled) return;
+  $("s-models").disabled = $("s-llm").disabled = true; dlFrom = null;
+  $("dl-info").textContent = "· подготовка загрузки…";
+  try { await tp.core("download", {}); $("dl-info").textContent = "Модели скачаны — интернет для разбора больше не нужен"; renderPacks((await tp.core("status", {})).packs); }
+  catch (e) { $("dl-info").textContent = e.message.replace(/^Error invoking remote method 'core': Error: /, "") + " Нажмите ещё раз — загрузка продолжится с того же места."; }
+  $("s-models").disabled = $("s-llm").disabled = false; $("job").classList.add("hidden");
+};
+$("s-models").onclick = dl();
 
 (async () => {
   state = await tp.core("status", {});
-  fillProfile(state.profile); fillSettings(state.config); renderPacks(state.packs);
+  fillProfile(state.profile); fillSettings(state.config); renderPacks(state.packs); renderLlm(state.llm);
+  $("m-every").value = String(state.config.monitor.everyHours ?? 0); loadWatched().catch(() => {});
+  // первый запуск: модель выбрана по компьютеру — показываем почему и где сменить
+  if (state.llm.first) { document.querySelector('[data-tab="settings"]').click(); $("dl-info").textContent = "Модель выбрана по вашему компьютеру — можно сменить выше. Нажмите «Скачать модели», это нужно один раз."; }
   $("ver").textContent = `v${state.version} · kozhevnikovai`;
-  if (state.downloading) dl(false)();
+  if (state.downloading) dl()();
   $("s-about").textContent = `Версия ${state.version} · база норм ${state.rulesVersion}, карточек: ${state.rules} · MIT · github.com/kozhevnikovai/tender-pomoshnik`;
 })();

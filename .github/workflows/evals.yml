@@ -1,0 +1,35 @@
+name: evals
+# Качество ИИ-ответов (вопросы по документам, ИИ-отсев мониторинга) на каждой локальной модели каталога local-ai.
+# Ручной запуск и раз в неделю.
+on:
+  workflow_dispatch:
+    inputs:
+      models: { description: "JSON-список id моделей (пусто — основной набор)", required: false, default: "" }
+  schedule: [{ cron: "43 4 * * 1" }]
+  # изменения ИИ-части в ветке релиза проверяются до слияния
+  push:
+    branches: ["release/**"]
+    paths: ["evals/ai/**", "evals/ai.mjs", "src/ask.ts", "src/monitor.ts", "src/llm.ts", "src/models.ts", "package-lock.json"]
+permissions: { contents: read }
+jobs:
+  ai:
+    strategy:
+      fail-fast: false
+      matrix: { model: "${{ fromJSON(inputs.models || '[\"qwen3-4b\",\"qwen3-14b\"]') }}" }
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env: { TENDER_HOME: /home/runner/th, TENDER_GPU: cpu, TENDER_LLM_MODEL: "${{ matrix.model }}" }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npm run build
+      - uses: actions/cache@v4
+        with: { path: ~/th/models/llm, key: "llm-${{ matrix.model }}-v1" }
+      - run: node dist/cli.js models --model ${{ matrix.model }}
+      - run: node evals/ai.mjs
+      - if: always()
+        run: cat evals/ai-results.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "evals-ai-${{ matrix.model }}", path: "evals/ai-results.*" }

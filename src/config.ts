@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { LLMOptions } from "./llm.js";
-import { homeDir } from "./models.js";
+import { homeDir, selectLlm } from "./models.js";
 import type { CompanyProfile } from "./types.js";
 
 export interface MonitorQuery { text: string; minus?: string[]; law44?: boolean; law223?: boolean; priceFrom?: number; priceTo?: number; regions?: string[]; okpd2?: string[] }
@@ -15,7 +15,8 @@ export interface Config {
   ocr: boolean;
   llm: LLMOptions;
   outputDir: string;
-  monitor: { queries: MonitorQuery[]; aiFilter: boolean };
+  /** everyHours — проверка по расписанию, пока приложение запущено (0 — выключено) */
+  monitor: { queries: MonitorQuery[]; aiFilter: boolean; everyHours?: number };
   telegram?: { botToken: string; chatId: string };
   email?: { host: string; port: number; secure?: boolean; user: string; pass: string; to: string };
   bitrix24?: { webhook: string };
@@ -62,6 +63,7 @@ const pfile = () => join(homeDir(), "profile.json");
 export function loadConfig(): Config {
   try {
     const c = existsSync(file()) ? JSON.parse(readFileSync(file(), "utf8")) : {};
+    selectLlm(c.llm?.localModel ?? process.env.TENDER_LLM_MODEL); // от выбранной модели зависят «каких файлов не хватает» и загрузка
     return resolveSecrets({ ...DEFAULTS, ...c, llm: { ...DEFAULTS.llm, ...c.llm }, monitor: { ...DEFAULTS.monitor, ...c.monitor }, telegram: c.telegram && { ...c.telegram }, email: c.email && { ...c.email }, bitrix24: c.bitrix24 && { ...c.bitrix24 }, outputDir: c.outputDir || process.env.TENDER_OUT || defaultOutputDir() });
   } catch { return { ...DEFAULTS, outputDir: process.env.TENDER_OUT || defaultOutputDir() }; }
 }

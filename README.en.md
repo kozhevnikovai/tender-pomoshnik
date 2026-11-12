@@ -6,7 +6,7 @@
 
 [Русская версия](README.md)
 
-Enter a notice number and the assistant downloads the notice card and attachments from the public part of the Unified Procurement Information System (EIS, zakupki.gov.ru), reads PDF, DOCX, DOC, ZIP and scans, and produces:
+Enter a notice number and the assistant downloads the notice card and attachments from the public part of the Unified Procurement Information System (EIS, zakupki.gov.ru), reads PDF, DOCX, DOC, RTF, Excel spreadsheets, ZIP and scans, and produces:
 
 - **Key facts** — initial maximum price, submission deadline with the customer's time zone, procedure, platform, bid and contract security.
 - **Can we bid?** — "yes / no / need" against your company profile: SME status, licences, SRO membership, experience, national regime and registry numbers, cash for security, region.
