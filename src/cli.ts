@@ -18,6 +18,7 @@ import { download, LLM_MODELS, missing, PACKS, selectLlm } from "./models.js";
 import { runMonitor } from "./monitor.js";
 import { setWatched } from "./watch.js";
 import { customerHistory } from "./analytics.js";
+import { fetchResults } from "./eis.js";
 import { setOffline } from "./net.js";
 import { listRuns, loadRun, run } from "./pipeline.js";
 import type { Law, Procedure } from "./types.js";
@@ -116,12 +117,26 @@ mon.command("watch").argument("<номер>").option("--off", "перестат�
 
 p.command("customer").argument("<название...>").description("Аналитика заказчика: последние закупки в ЕИС, этапы, отмены, типичная цена")
   .action(async (w: string[]) => {
-    const s = await customerHistory(w.join(" "));
+    const s = await customerHistory(w.join(" "), { onStep: m => process.stderr.write(`\r${m}   `) });
+    process.stderr.write("\n");
     console.log(`${s.customer}: закупок ${s.total}${s.medianPrice ? `, медианная НМЦК ${s.medianPrice.toLocaleString("ru-RU")} ₽` : ""}${s.cancelledShare != null ? `, отменено ${s.cancelledShare}%` : ""}`);
     console.log(`Этапы: ${Object.entries(s.byStage).map(([k, v]) => `${k} — ${v}`).join("; ")}`);
     if (s.topWords.length) console.log(`Чаще всего закупает: ${s.topWords.join(", ")}`);
+    if (s.winners?.length) console.log(`Чаще выигрывают: ${s.winners.map(x => `${x.name} (${x.wins})`).join("; ")}`);
+    if (s.avgReduction != null) console.log(`Среднее снижение от НМЦК: ${s.avgReduction}%`);
+    for (const r of s.results ?? []) console.log(`  итог ${r.regNumber}  ${r.winner.slice(0, 60)}${r.price ? ` · ${r.price.toLocaleString("ru-RU")} ₽` : ""}${r.reduction != null ? ` · −${r.reduction}%` : ""}`);
     for (const r of s.recent.slice(0, 10)) console.log(`  ${r.published?.slice(0, 16) ?? ""}  ${r.regNumber}  ${r.title.slice(0, 80)}${r.price ? ` · ${r.price.toLocaleString("ru-RU")} ₽` : ""}`);
     for (const n of s.notes) console.log(`ℹ ${n}`);
+  });
+
+p.command("results").argument("<номер>").description("Итоги закупки 44-ФЗ: победитель, цена контракта, снижение от НМЦК")
+  .action(async (reg: string) => {
+    const r = await fetchResults(reg.replace(/\D/g, ""));
+    if (!r.contracts.length && !r.offers.length) return console.log("Итогов пока нет: контракт не заключён или протокол не опубликован.");
+    for (const o of r.offers) console.log(`Участник ${o.participant}: ${o.place}${o.price ? ` — ${o.price.toLocaleString("ru-RU")} ₽` : ""}`);
+    for (const c of r.contracts) console.log(`Контракт ${c.reestr}: ${c.supplier}${c.price ? ` — ${c.price.toLocaleString("ru-RU")} ₽` : ""}`);
+    if (r.nmck) console.log(`НМЦК ${r.nmck.toLocaleString("ru-RU")} ₽${r.reduction != null ? `, снижение ${r.reduction}%` : ""}`);
+    console.log(r.url);
   });
 
 p.command("rules").argument("[слова...]").option("--all").description("База норм: поиск по словам").action((w: string[], o) => {

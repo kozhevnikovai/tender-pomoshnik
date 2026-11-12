@@ -1,6 +1,6 @@
 // Интеграции: Telegram, почта, Битрикс24 (сделка), реестр закупок CSV (Excel / Google Таблицы).
 // Включаются пользователем; персональные данные маскируются; в строгом офлайне отключены.
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { Config } from "../config.js";
 import { netFetch } from "../net.js";
@@ -88,4 +88,39 @@ export function appendRegistry(path: string, r: Report, reportPath: string) {
   const f = (k: string) => r.fields.find(x => x.key === k)?.value;
   if (!existsSync(path)) appendFileSync(path, "﻿" + ["Дата разбора", "Номер", "Закон", "Способ", "Объект", "Заказчик", "НМЦК", "Подача до", "Вердикт", "Высоких рисков", "Рисков", "Отчёт"].map(csv).join(";") + "\n");
   appendFileSync(path, [r.createdAt.slice(0, 10), r.noticeNumber, r.law, r.procedure, r.title, f("customer"), f("nmck"), f("deadline"), r.fitSummary ?? "", r.risks.filter(x => x.severity === "высокий").length, r.risks.length, reportPath].map(csv).join(";") + "\n");
+}
+
+/** CSV реестра (разделитель «;», кавычки) → строки */
+export function parseCsv(text: string): string[][] {
+  const rows: string[][] = []; let row: string[] = []; let cell = ""; let q = false;
+  const t = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; continue; }
+    if (c === '"') q = true;
+    else if (c === ";") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+/** Реестр в Excel (.xlsx): рядом с CSV, с фильтром, ширинами колонок и числами в НМЦК. Формулы не создаются — только значения. */
+export async function writeRegistryXlsx(csvPath: string): Promise<string> {
+  const XLSX: any = await import("xlsx");
+  const rows = parseCsv(readFileSync(csvPath, "utf8")).map(r => r.map(v => (v.startsWith("'") && /^'[=+\-@\t\r]/.test(v) ? v.slice(1) : v)));
+  const head = rows[0] ?? [];
+  const num = new Set(["НМЦК", "Высоких рисков", "Рисков"].map(h => head.indexOf(h)).filter(i => i >= 0));
+  const data = rows.map((r, ri) => r.map((v, ci) => (ri && num.has(ci) && /^\d+(?:[.,]\d+)?$/.test(v.replace(/\s/g, "")) ? Number(v.replace(/\s/g, "").replace(",", ".")) : v)));
+  const ws = XLSX.utils.aoa_to_sheet(data, { cellDates: false });
+  // строки, похожие на формулы, остаются текстом
+  for (const k of Object.keys(ws)) if (!k.startsWith("!") && ws[k].t === "s") delete ws[k].f;
+  ws["!cols"] = head.map(h => ({ wch: Math.min(60, Math.max(10, h.length + 2, ...data.slice(1).map(r => String(r[head.indexOf(h)] ?? "").length).map(n => Math.min(n, 60)))) }));
+  if (data.length) ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: data.length - 1, c: Math.max(0, head.length - 1) } }) };
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Реестр закупок");
+  const out = csvPath.replace(/\.csv$/i, ".xlsx");
+  writeFileSync(out, XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+  return out;
 }

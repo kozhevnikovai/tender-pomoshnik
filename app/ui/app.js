@@ -86,12 +86,12 @@ $("c-make").onclick = async () => {
 $("r-customer").onclick = async () => {
   if (!current || $("r-customer").disabled) return;
   const name = current.report.fields.find(f => f.key === "customer")?.value;
-  $("cust").classList.remove("hidden"); $("cust-list").innerHTML = ""; $("cust-msg").textContent = "· ищу закупки заказчика в ЕИС…";
+  $("cust").classList.remove("hidden"); $("cust-list").innerHTML = ""; $("cust-msg").textContent = "· ищу закупки заказчика и итоги в ЕИС (до минуты)…";
   $("r-customer").disabled = true;
   try {
     const s = await tp.core("customer", { name });
     const rub = n => n.toLocaleString("ru-RU") + " ₽";
-    $("cust-msg").innerHTML = `<b>${esc(s.customer)}</b> — закупок: ${s.total}${s.medianPrice ? `, медианная НМЦК ${rub(s.medianPrice)}` : ""}${s.cancelledShare != null ? `, отменено ${s.cancelledShare}%` : ""}${s.topWords.length ? `<br><small>Чаще всего: ${esc(s.topWords.join(", "))}</small>` : ""}${s.notes.map(n => `<br><small>${esc(n)}</small>`).join("")}`;
+    $("cust-msg").innerHTML = `<b>${esc(s.customer)}</b> — закупок: ${s.total}${s.medianPrice ? `, медианная НМЦК ${rub(s.medianPrice)}` : ""}${s.cancelledShare != null ? `, отменено ${s.cancelledShare}%` : ""}${s.topWords.length ? `<br><small>Чаще всего: ${esc(s.topWords.join(", "))}</small>` : ""}${s.winners?.length ? `<br><small>Чаще выигрывают: ${esc(s.winners.map(x => `${x.name} (${x.wins})`).join("; "))}</small>` : ""}${s.avgReduction != null ? `<br><small>Среднее снижение от НМЦК: ${s.avgReduction}%</small>` : ""}${s.notes.map(n => `<br><small>${esc(n)}</small>`).join("")}`;
     $("cust-list").innerHTML = s.recent.map(x => `<div><span>${esc(x.title)}<br><small>${esc(x.regNumber)}${x.stage ? ` · ${esc(x.stage)}` : ""}${x.price ? ` · ${rub(x.price)}` : ""}${x.published ? ` · ${esc(x.published.slice(0, 16))}` : ""}</small></span><button class="ghost" data-url="${esc(x.url)}">В ЕИС</button></div>`).join("");
     $("cust-list").querySelectorAll("[data-url]").forEach(b => b.onclick = () => tp.openUrl(b.dataset.url));
   } catch (e) { $("cust-msg").textContent = "✕ " + errText(e); }

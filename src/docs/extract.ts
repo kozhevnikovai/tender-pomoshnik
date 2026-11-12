@@ -19,33 +19,88 @@ export const ZIP_LIMITS = { entries: 30, entryBytes: 100 * 1024 * 1024, totalByt
 /** Больше стольких страниц-сканов не распознаём: OCR медленный */
 export const OCR_MAX_PAGES = 60;
 
-/** Архивы ZIP (в ЕИС документы часто упакованы): все поддерживаемые файлы внутри склеиваются в один документ */
-async function extractZip(name: string, buf: Buffer, opts: ExtractOpts): Promise<DocText> {
+/** Файл внутри архива: объявленный размер и чтение по требованию */
+interface ArchiveEntry { name: string; size: number; read: () => Promise<Buffer> }
+
+/** Общая обработка содержимого архива: лимиты, вложенность, склейка в один документ */
+async function fromArchive(name: string, entriesAll: ArchiveEntry[], opts: ExtractOpts, depth: number): Promise<DocText> {
   const out: DocText = { name, kind: "docx", unit: "para", parts: [], tables: [], warnings: [] };
-  const depth = (opts.depth ?? 0) + 1;
-  if (depth > ZIP_LIMITS.depth) return { ...out, warnings: ["Архив внутри архива внутри архива — не распаковываем, откройте вручную"] };
-  const JSZip = (await import("jszip")).default;
-  const zip = await JSZip.loadAsync(buf).catch(() => { throw new Error("архив повреждён или защищён паролем"); });
-  const all = Object.values(zip.files).filter(f => !f.dir);
-  if (all.length > ZIP_LIMITS.entries) out.warnings.push(`В архиве ${all.length} файлов, прочитаны первые ${ZIP_LIMITS.entries}`);
-  const entries = all.slice(0, ZIP_LIMITS.entries);
+  if (entriesAll.length > ZIP_LIMITS.entries) out.warnings.push(`В архиве ${entriesAll.length} файлов, прочитаны первые ${ZIP_LIMITS.entries}`);
+  const entries = entriesAll.slice(0, ZIP_LIMITS.entries);
   let total = 0;
   for (const f of entries) {
     // размер после распаковки объявлен в архиве: «бомбу» не распаковываем вовсе
-    const size = Number((f as any)._data?.uncompressedSize ?? 0);
-    if (size > ZIP_LIMITS.entryBytes || total + size > ZIP_LIMITS.totalBytes) { out.warnings.push(`${f.name}: слишком большой после распаковки — пропущен`); continue; }
-    const data = Buffer.from(await f.async("uint8array"));
+    if (f.size > ZIP_LIMITS.entryBytes || total + f.size > ZIP_LIMITS.totalBytes) { out.warnings.push(`${f.name}: слишком большой после распаковки — пропущен`); continue; }
+    let data: Buffer;
+    try { data = await f.read(); } catch (e) { out.warnings.push(`${f.name}: не распакован (${(e as Error).message.slice(0, 120)})`); continue; }
     total += data.length;
-    if (total > ZIP_LIMITS.totalBytes) { out.warnings.push("Архив слишком большой после распаковки — остальные файлы пропущены"); break; }
+    if (data.length > ZIP_LIMITS.entryBytes || total > ZIP_LIMITS.totalBytes) { out.warnings.push("Архив слишком большой после распаковки — остальные файлы пропущены"); break; }
     let inner: DocText;
-    try { inner = await extractBuffer(f.name.split("/").pop()!, data, { ...opts, depth }); }
+    try { inner = await extractBuffer(f.name.split(/[\\/]/).pop()!, data, { ...opts, depth }); }
     catch (e) { out.warnings.push(`${f.name}: не прочитан (${(e as Error).message.slice(0, 120)})`); continue; }
-    if (entries.length === 1) return { ...inner, name: `${name} → ${inner.name}` };
+    if (entries.length === 1) return { ...inner, name: `${name} → ${inner.name}`, warnings: [...out.warnings, ...inner.warnings] };
     out.warnings.push(...inner.warnings.map(w => `${inner.name}: ${w}`));
     for (const p of inner.parts) out.parts.push({ n: out.parts.length + 1, text: p.text, ocr: p.ocr });
     out.tables.push(...inner.tables);
   }
   return out;
+}
+
+const tooDeep = (name: string): DocText => ({ name, kind: "docx", unit: "para", parts: [], tables: [], warnings: ["Архив внутри архива внутри архива — не распаковываем, откройте вручную"] });
+
+/** Архивы ZIP (в ЕИС документы часто упакованы): все поддерживаемые файлы внутри склеиваются в один документ */
+async function extractZip(name: string, buf: Buffer, opts: ExtractOpts): Promise<DocText> {
+  const depth = (opts.depth ?? 0) + 1;
+  if (depth > ZIP_LIMITS.depth) return tooDeep(name);
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(buf).catch(() => { throw new Error("архив повреждён или защищён паролем"); });
+  const entries = Object.values(zip.files).filter(f => !f.dir)
+    .map(f => ({ name: f.name, size: Number((f as any)._data?.uncompressedSize ?? 0), read: async () => Buffer.from(await f.async("uint8array")) }));
+  return fromArchive(name, entries, opts, depth);
+}
+
+/** Строки «Ключ = значение» из `7z l -slt` → записи архива */
+export function parseSevenZipList(lines: string[]): { path: string; size: number; dir: boolean; encrypted: boolean }[] {
+  const out: { path: string; size: number; dir: boolean; encrypted: boolean }[] = [];
+  let cur: Record<string, string> | null = null;
+  const push = () => { if (cur?.Path !== undefined) out.push({ path: cur.Path, size: Number(cur.Size) || 0, dir: cur.Folder === "+" || /^D/.test(cur.Attributes ?? ""), encrypted: cur.Encrypted === "+" }); };
+  for (const raw of lines.join("\n").split(/\r?\n/)) {
+    const i = raw.indexOf("Path = ");
+    if (i >= 0) { push(); cur = { Path: raw.slice(i + 7) }; continue; }
+    const m = raw.match(/^([A-Za-z ]+?) = (.*)$/);
+    if (m && cur) cur[m[1]] = m[2];
+  }
+  push();
+  return out;
+}
+
+/** RAR и 7z — через 7-Zip, собранный в WebAssembly: всё в памяти, на диск ничего не пишется */
+async function extract7z(name: string, buf: Buffer, ext: string, opts: ExtractOpts): Promise<DocText> {
+  const depth = (opts.depth ?? 0) + 1;
+  if (depth > ZIP_LIMITS.depth) return tooDeep(name);
+  const mod: any = await import("7z-wasm");
+  const SevenZip = typeof mod.default === "function" ? mod.default : mod.default?.default ?? mod;
+  const lines: string[] = [];
+  const z = await SevenZip({ print: (l: string) => lines.push(l), printErr: (l: string) => lines.push(l) });
+  const arc = `/in/archive${ext}`;
+  z.FS.mkdir("/in"); z.FS.mkdir("/out");
+  z.FS.writeFile(arc, buf);
+  // -p- — без пароля: защищённый архив не «зависнет» на запросе пароля
+  if (z.callMain(["l", "-slt", "-ba", "-bd", "-p-", "-sccUTF-8", arc]) !== 0) throw new Error("архив повреждён или защищён паролем");
+  const list = parseSevenZipList(lines).filter(e => !e.dir);
+  if (list.some(e => e.encrypted)) throw new Error("архив защищён паролем — распакуйте его вручную");
+  const entries: ArchiveEntry[] = list.map(e => ({
+    name: e.path, size: e.size,
+    read: async () => {
+      lines.length = 0;
+      if (z.callMain(["x", arc, "-o/out", "-y", "-bd", "-p-", "-sccUTF-8", "-scsUTF-8", "--", e.path]) !== 0) throw new Error(lines.filter(Boolean).slice(-1)[0] ?? "ошибка распаковки");
+      const p = "/out/" + e.path.replace(/\\/g, "/");
+      const data = Buffer.from(z.FS.readFile(p));
+      try { z.FS.unlink(p); } catch { /* уже нет */ }
+      return data;
+    },
+  }));
+  return fromArchive(name, entries, opts, depth);
 }
 
 /** DOCX и ODT — тоже архивы: «бомбу» (маленький файл, сотни мегабайт после распаковки) не открываем */
@@ -81,9 +136,7 @@ export async function extractBuffer(name: string, buf: Buffer, opts: ExtractOpts
   if (ext === ".doc") return extractDoc(name, buf);
   if (ext === ".xlsx" || ext === ".xls" || ext === ".ods") return extractSheet(name, buf, ext);
   if (ext === ".rtf") return fromPlain(name, rtfToText(buf));
-  if (ext === ".rar" || ext === ".7z") {
-    return { name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Архив ${ext} пока не распаковывается: распакуйте его и добавьте файлы`] };
-  }
+  if (ext === ".rar" || ext === ".7z") return extract7z(name.slice(0, -ext.length), buf, ext, opts);
   return { name, kind: "txt", unit: "para", parts: [], tables: [], warnings: [`Неизвестный формат ${ext}`] };
 }
 

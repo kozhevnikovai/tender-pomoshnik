@@ -1,5 +1,6 @@
 // Открытая часть ЕИС (zakupki.gov.ru): карточка закупки, список документов, RSS-поиск.
 // Только публичные страницы, без авторизации и обхода защиты; не чаще 1 запроса в секунду.
+import { money, parseResults, reduction, winnerOf, type TenderResult } from "./results.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { netFetch } from "./net.js";
@@ -182,4 +183,24 @@ export function parseRss(xml: string): SearchItem[] {
     const desc = clean(unesc(tag("description")));
     return { regNumber: link.match(/regNumber=(\d+)/)?.[1] ?? tag("title").match(/(\d{11,19})/)?.[1] ?? "", title: tag("title"), url: link, description: desc, published: tag("pubDate") || undefined };
   }).filter(i => i.regNumber);
+}
+
+/** Итоги закупки 44-ФЗ: победитель, цена контракта, снижение от НМЦК (НМЦК — из карточки, если не передана) */
+export async function fetchResults(regNumber: string, nmck?: number | null): Promise<TenderResult> {
+  if (!/^\d{19}$/.test(regNumber)) throw new Error("Итоги в ЕИС разбираются для закупок 44-ФЗ (номер извещения из 19 цифр); для 223-ФЗ откройте протокол на странице закупки");
+  for (const k of KINDS_44) {
+    const url = `${BASE}/epz/order/notice/${k}/view/supplier-results.html?regNumber=${regNumber}`;
+    let html: string;
+    try { html = (await (await get(url)).text()).slice(0, MAX_PAGE_CHARS); } catch (e) { if (/не найдена/.test((e as Error).message)) continue; throw e; }
+    if (!/section__title|tableBlock/.test(html)) continue;
+    const { offers, contracts } = parseResults(html);
+    let base = nmck ?? null;
+    if (base == null) {
+      const card = parseCard((await (await get(cardUrl(regNumber, k))).text()).slice(0, MAX_PAGE_CHARS));
+      base = money(card.find(([key]) => /начальная \(максимальная\) цена/i.test(key))?.[1] ?? "");
+    }
+    const w = winnerOf({ contracts });
+    return { regNumber, url, offers, contracts, nmck: base, reduction: reduction(base, w?.price ?? offers.find(o => /победител/i.test(o.place))?.price ?? null) };
+  }
+  throw new Error(`Итоги закупки ${regNumber} в ЕИС не найдены: возможно, определение поставщика ещё не завершено`);
 }

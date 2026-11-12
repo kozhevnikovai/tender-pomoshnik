@@ -12,9 +12,10 @@ import { retrieve } from "./ask.js";
 import { EMPTY_PROFILE, loadProfile, saveProfile } from "./config.js";
 import { contractPlan } from "./contract.js";
 import { locate, fmtSource } from "./docs/quote.js";
-import { searchRss } from "./eis.js";
+import { fetchResults, searchRss } from "./eis.js";
 import { customerHistory } from "./analytics.js";
 import { toMarkdown } from "./export/text.js";
+import { changesMarkdown } from "./changes.js";
 import { antidumping, bidSecurity, contractSecurity, supplierFine } from "./law/calc.js";
 import { searchRules } from "./law/rules.js";
 import { listRuns, loadRun, run } from "./pipeline.js";
@@ -153,9 +154,24 @@ export function buildServer(): McpServer {
 
   s.registerTool("customer_history", {
     title: "Аналитика заказчика",
-    description: "Последние закупки заказчика в открытой части ЕИС: этапы, доля отмен, типичная НМЦК, частые предметы.",
+    description: "Последние закупки заказчика в открытой части ЕИС: этапы, доля отмен, типичная НМЦК, частые предметы, а по завершённым закупкам 44-ФЗ — победители и среднее снижение от НМЦК.",
     inputSchema: { customer: z.string().describe("название заказчика, как в извещении") },
   }, async ({ customer }) => text(JSON.stringify(await customerHistory(customer), null, 2)));
+
+  s.registerTool("tender_results", {
+    title: "Итоги закупки",
+    description: "Итоги закупки 44-ФЗ из открытой части ЕИС: предложения участников, победитель, цена заключённого контракта и снижение от НМЦК.",
+    inputSchema: { regNumber: z.string().regex(/^\d{19}$/).describe("номер извещения 44-ФЗ, 19 цифр") },
+  }, async ({ regNumber }) => text(JSON.stringify(await fetchResults(regNumber), null, 2)));
+
+  s.registerTool("tender_changes", {
+    title: "Что изменилось в закупке",
+    description: "Сравнение последнего разбора закупки с прошлым: изменённые сведения (НМЦК, сроки, обеспечение) и пункты документов — добавленные и убранные после изменения извещения или разъяснения. Чтобы сравнение появилось, разберите закупку повторно через analyze_tender.",
+    inputSchema: { id: z.string().describe("номер извещения или папка разбора из list_tenders") },
+  }, async ({ id }) => {
+    const r = loadRun(id).report;
+    return text(r.changes ? changesMarkdown(r.changes).join("\n") : "Сравнивать не с чем: закупка разобрана один раз. Разберите её повторно (analyze_tender) после изменения извещения или разъяснения.");
+  });
 
   s.registerTool("list_tenders", { title: "Разобранные закупки", description: "Список ранее разобранных закупок.", inputSchema: {} }, async () => text(listRuns().map(x => `${x.id} · ${x.createdAt.slice(0, 10)} · ${x.title ?? ""}`).join("\n") || "Пока пусто."));
 
