@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFi
 import { isAbsolute, join, relative } from "node:path";
 import { clarificationDraft, complaintDraft, declarationsDraft } from "./analyze/drafts.js";
 import { analyzeDocs } from "./analyze/index.js";
+import { archivePrevious, compareRuns } from "./changes.js";
 import { extractFile } from "./docs/extract.js";
 import { loadConfig, loadProfile } from "./config.js";
 import { closeOcr } from "./docs/ocr.js";
@@ -11,7 +12,7 @@ import { cardDoc, downloadDocs, fetchCard } from "./eis.js";
 import { draftDocx } from "./export/docx.js";
 import { toHtml } from "./export/html.js";
 import { toIcs, toMarkdown } from "./export/text.js";
-import { appendRegistry } from "./integrations/index.js";
+import { appendRegistry, writeRegistryXlsx } from "./integrations/index.js";
 import type { CompanyProfile, DocText, Report } from "./types.js";
 
 export interface RunInput { regNumber?: string; files?: string[]; profile?: CompanyProfile | null; outDir?: string; ocr?: boolean; onStep?: (s: string) => void }
@@ -47,6 +48,9 @@ export async function run(i: RunInput): Promise<RunResult> {
   await closeOcr();
   const report = analyzeDocs(docs, { profile: profile ?? undefined });
   report.warnings.push(...dlWarnings);
+  // повторный разбор той же закупки (после изменения извещения или разъяснения) — сравниваем с прошлым
+  const prev = archivePrevious(dir);
+  if (prev) report.changes = compareRuns(prev, { report, docs });
   writeFileSync(join(dir, "тексты.json"), JSON.stringify(docs));
   step("Отчёт и черновики");
   const drafts = { clarification: clarificationDraft(report, profile?.name || undefined), complaint: complaintDraft(report, profile?.name ? `${profile.name}${profile.inn ? `, ИНН ${profile.inn}` : ""}` : undefined) };
@@ -55,6 +59,9 @@ export async function run(i: RunInput): Promise<RunResult> {
     clarification: join(dir, "черновик-запрос-разъяснений.docx"), complaint: join(dir, "черновик-жалобы-ФАС.docx"),
     declarations: join(dir, "черновик-декларации.docx"),
   };
+  appendRegistry(join(c.outputDir, "реестр-закупок.csv"), report, out.html);
+  // тот же реестр в Excel; сбой (файл открыт в Excel) не ломает разбор
+  await writeRegistryXlsx(join(c.outputDir, "реестр-закупок.csv")).catch(() => report.warnings.push("Реестр-закупок.xlsx не обновлён — возможно, он открыт в Excel. Закройте файл, обновится при следующем разборе"));
   writeFileSync(out.html, toHtml(report, drafts));
   writeFileSync(out.md, toMarkdown(report));
   writeFileSync(out.json, JSON.stringify(report, null, 2));
@@ -62,7 +69,6 @@ export async function run(i: RunInput): Promise<RunResult> {
   writeFileSync(out.clarification, await draftDocx(drafts.clarification));
   writeFileSync(out.complaint, await draftDocx(drafts.complaint));
   writeFileSync(out.declarations, await draftDocx(declarationsDraft(report, profile ?? null)));
-  appendRegistry(join(c.outputDir, "реестр-закупок.csv"), report, out.html);
   return { report, dir, files: out, docs };
 }
 

@@ -1,14 +1,23 @@
 // HTML-отчёт по закупке в светлом стиле приложений kozhevnikovai: один файл, шрифты встроены, работает без интернета.
 // Окно «Главное», вердикт, риски, расчёты, сроки, сведения с цитатами, чек-лист, ТЗ, черновики.
+import { hasChanges, type Changes } from "../changes.js";
 import { fmtSource } from "../docs/quote.js";
 import type { LawRef, Report, Source } from "../types.js";
 import { VERSION } from "../version.js";
 import { fontFaces } from "./fonts.js";
 
+function changesHtml(c: Changes): string {
+  const head = `<h2><span class="n">00</span>Что изменилось с прошлого разбора</h2><p class="meta">Прошлый разбор: ${esc(c.since.slice(0, 16).replace("T", " "))}</p>`;
+  if (!hasChanges(c)) return head + `<p>Изменений в сведениях и тексте документов нет.</p>`;
+  return head + (c.fields.length ? `<table><tr><th>Сведение</th><th>Было</th><th>Стало</th></tr>${c.fields.map(f => `<tr><td>${esc(f.label)}</td><td>${esc(f.was)}</td><td><b>${esc(f.now)}</b></td></tr>`).join("")}</table>` : "") +
+    c.docs.map(d => `<details open><summary><b>${esc(d.doc)}</b> — ${esc(d.status)}</summary>${d.added.map(t => `<p class="diff-add">+ ${esc(t.slice(0, 600))}</p>`).join("")}${d.removed.map(t => `<p class="diff-del">− ${esc(t.slice(0, 600))}</p>`).join("")}</details>`).join("");
+}
+
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const d8 = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-"); const t = iso.slice(11, 16); return `${d}.${m}.${y}${t ? " " + t : ""}`; };
 
-const CSS = `
+const CSS = `.diff-add{background:#E7F3EC;border-radius:6px;padding:4px 8px;margin:4px 0}.diff-del{background:#FCE9E7;border-radius:6px;padding:4px 8px;margin:4px 0;text-decoration:line-through;color:#5C5C57}
+
 :root{--bg:#FBFBFA;--card:#fff;--ink:#1A1A19;--pencil:#5C5C57;--line:#E8E8E5;--plate:#F1F1EE;--acc:#C2410C;--ok:#1F7A4A;--okbg:#E7F3EC;--warn:#9A5B00;--warnbg:#FFF3DF;--bad:#B3261E;--badbg:#FCE9E7}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 Geologica,"Segoe UI",system-ui,sans-serif}
 .sheet{max-width:1040px;margin:32px auto;padding:0 20px 40px}
@@ -67,6 +76,7 @@ export function toHtml(r: Report, drafts?: { clarification: string; complaint: s
 <div class="bar"><button onclick="document.body.classList.toggle('only-problems')">Только проблемы</button><button onclick="window.print()">Печать / PDF</button></div>
 <div class="main">${main.map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>
 <p class="disc">${esc(r.disclaimer)}</p>
+${r.changes ? changesHtml(r.changes) : ""}
 
 ${r.fit.length ? `<h2><span class="n">01</span>Подходит ли нам: <span class="v-${r.fitSummary}">${r.fitSummary}</span></h2>
 <table><tr><th>Требование</th><th>Вердикт</th><th>Почему</th></tr>${r.fit.map(x => `<tr class="${x.verdict === "можем" ? "okrow" : ""}"><td>${esc(x.requirement)}${src(x.source, false)}</td><td><span class="tag v-${x.verdict}">${x.verdict}</span></td><td>${esc(x.reason)}${src(x.source)}<div>${law(x.law)}</div></td></tr>`).join("")}</table>` : `<h2><span class="n">01</span>Подходит ли нам</h2><p class="meta">Заполните профиль компании — и помощник сравнит его с требованиями закупки.</p>`}

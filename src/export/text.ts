@@ -1,4 +1,5 @@
 // Markdown-отчёт и календарь сроков (.ics)
+import { changesMarkdown } from "../changes.js";
 import { fmtSource } from "../docs/quote.js";
 import type { LawRef, Report } from "../types.js";
 
@@ -12,6 +13,7 @@ export function toMarkdown(r: Report): string {
     for (const x of r.fit) L.push(`- **${x.verdict}** — ${x.requirement}: ${x.reason}${x.source ? ` (${fmtSource(x.source)})` : ""}${x.law?.length ? ` — ${lawMd(x.law)}` : ""}`);
     L.push("");
   }
+  if (r.changes) L.push(...changesMarkdown(r.changes));
   L.push("## Риски", "");
   if (!r.risks.length) L.push("Явных рисков по проверяемым правилам не найдено.");
   for (const x of r.risks) L.push(`- **${x.severity}** — ${x.title}. ${x.detail}${x.source ? `\n  > «${x.source.quote}» — ${fmtSource(x.source)}` : ""}${x.law?.length ? `\n  ${lawMd(x.law)}` : ""}`);

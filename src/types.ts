@@ -139,4 +139,6 @@ export interface Report {
   checklist: { item: string; source?: Source; law?: LawRef[] }[];
   warnings: string[];
   disclaimer: string;
+  /** Что изменилось с прошлого разбора этой же закупки */
+  changes?: import("./changes.js").Changes;
 }

@@ -6,14 +6,16 @@
 
 [Русская версия](README.md)
 
-Enter a notice number and the assistant downloads the notice card and attachments from the public part of the Unified Procurement Information System (EIS, zakupki.gov.ru), reads PDF, DOCX, DOC, RTF, Excel spreadsheets, ZIP and scans, and produces:
+Enter a notice number and the assistant downloads the notice card and attachments from the public part of the Unified Procurement Information System (EIS, zakupki.gov.ru), reads PDF, DOCX, DOC, RTF, Excel spreadsheets, ZIP, RAR and 7z archives and scans, and produces:
 
 - **Key facts** — initial maximum price, submission deadline with the customer's time zone, procedure, platform, bid and contract security.
 - **Can we bid?** — "yes / no / need" against your company profile: SME status, licences, SRO membership, experience, national regime and registry numbers, cash for security, region.
 - **Money** — security (Art. 44, Art. 96), anti-dumping (Art. 37), fines (Government Decree No. 1042), daily penalty, margin.
 - **Risks** — payment term over 7 working days, too-short submission period, unlawful security or fines, brand without "or equivalent", tailored specifications, unrealistic deadlines, number vs. words mismatch.
 - **Deadlines** to `.ics`, **application checklist**, **offer check against the specification**, **drafts** of a clarification request and an FAS complaint (Word), **contract execution plan** after winning.
-- **Monitoring** via the official EIS RSS with Telegram and e-mail alerts; **Bitrix24** deals and a CSV registry for Excel / Google Sheets.
+- **Monitoring** via the official EIS RSS with Telegram and e-mail alerts; **Bitrix24** deals and a registry in Excel (XLSX) and CSV.
+- **Results and customer analytics** — winner, participants' offers, contract price and discount from the initial price (44-FZ); for a customer — who usually wins and the average discount.
+- **What changed** — re-analyze a tender after a notice change or clarification: the report lists changed facts and added/removed clauses in each document.
 
 ## Accuracy
 
@@ -33,4 +35,4 @@ Never submits bids, never signs, never touches digital signatures or platform pa
 
 ## License
 
-MIT · kozhevnikovai · No. 004
+MIT · kozhevnikovai · No. 004. Third-party: 7-Zip WebAssembly build (LGPL + unRAR restriction) for RAR/7z, SheetJS (Apache-2.0), Tesseract, pdf.js (Apache-2.0).
