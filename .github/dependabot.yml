@@ -8,3 +8,7 @@ updates:
     schedule: { interval: weekly }
     open-pull-requests-limit: 3
     groups: { all: { patterns: ["*"] } }
+    # unpdf 2 требует Node.js 24+, а CLI и MCP поддерживают Node.js 20+
+    ignore:
+      - dependency-name: unpdf
+        update-types: ["version-update:semver-major"]
