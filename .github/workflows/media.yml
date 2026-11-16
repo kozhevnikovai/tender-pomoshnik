@@ -19,7 +19,7 @@ jobs:
       - uses: actions/cache@v6
         with: { path: ~/th/models/llm, key: "llm-qwen3-4b-v1" }
       - run: node dist/cli.js models --model qwen3-4b
-      - run: npx playwright-core install ffmpeg
+      - run: npm i --no-save playwright-core && npx playwright-core install ffmpeg
       - run: xvfb-run -a -s "-screen 0 1920x1080x24" node scripts/media/capture.mjs
       - uses: actions/upload-artifact@v7
         if: always()
