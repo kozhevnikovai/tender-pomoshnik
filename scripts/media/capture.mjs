@@ -12,9 +12,6 @@ await app.evaluate(({ BrowserWindow, dialog }, files) => { const w = BrowserWind
 const win = await app.firstWindow(); await win.waitForTimeout(2500);
 const snap = async name => { await win.waitForTimeout(500); try { await win.screenshot({ path: join(OUT, name + ".png") }); } catch { const b = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString("base64")); writeFileSync(join(OUT, name + ".png"), Buffer.from(b, "base64")); } log("снимок", name); };
 const tab = async t => { await win.click(`[data-tab="${t}"]`); await win.waitForTimeout(900); };
-// профиль компании — образец из приложения (поставщик медицинской мебели — вымышленная компания, поля помечены как пример)
-await tab("profile"); await win.fill("#p-name", "ООО «Пример»").catch(() => {}); await win.fill("#p-okved", "32.50, 46.46").catch(() => {}); await win.fill("#p-regions", "Камчатский край").catch(() => {}); await snap("app-profile");
-await win.click("#p-save").catch(() => {});
 await tab("tender"); await snap("app-start");
 await win.click("#pick"); await win.waitForTimeout(800); await snap("app-files");
 await win.click("#go"); const t0 = Date.now();
