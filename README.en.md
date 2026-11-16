@@ -6,6 +6,18 @@
 
 [Русская версия](README.md)
 
+<p align="center"><img src="docs/img/demo.gif" alt="Files → analysis → report" width="100%"></p>
+
+<sub>A real analysis of open tender No. 0338200010526000176 from EIS (medical furniture, initial price 77,550 ₽). Officials' contacts are hidden. 40-second video: [docs/video/promo.mp4](docs/video/promo.mp4).</sub>
+
+## Install in 3 steps
+
+1. Download the Windows or macOS installer from the [latest release](https://github.com/kozhevnikovai/tender-pomoshnik/releases/latest). Windows may warn about an unknown publisher: More info → Run anyway.
+2. Open the app and enter a notice number or drop the tender files.
+3. Click «Разобрать» (Analyze). The report opens in about a minute.
+
+## Features
+
 Enter a notice number and the assistant downloads the notice card and attachments from the public part of the Unified Procurement Information System (EIS, zakupki.gov.ru), reads PDF, DOCX, DOC, RTF, Excel spreadsheets, ZIP, RAR and 7z archives and scans, and produces:
 
 - **Key facts** — initial maximum price, submission deadline with the customer's time zone, procedure, platform, bid and contract security.
@@ -23,11 +35,21 @@ Facts about the procurement come with a verbatim quote and page/paragraph; quote
 
 Evals on 36 real EIS notices: **100 %** of 205 checks on the main set and **100 %** of 105 checks on a hold-out set (98 % on its first run) when analyzing by notice number; 100 % of quotes found verbatim. See [evals/results.md](evals/results.md).
 
+<p align="center"><img src="docs/img/report.jpg" width="49%"> <img src="docs/img/report2.jpg" width="49%"></p>
+
+## FAQ
+
+**Is it free?** Yes, MIT license.
+
+**Do documents leave my computer?** No. The Qwen3 model runs locally; a cloud model is opt-in with personal data masked.
+
+**Will it submit a bid for me?** No. It never submits bids or touches digital signatures.
+
 ## Safety
 
 Never submits bids, never signs, never touches digital signatures or platform passwords. Company documents and profile stay on your computer; a cloud model (Claude with your key or any OpenAI-compatible API) is opt-in with personal data masked. Only public EIS pages are read, at most one request per second. **This is an assistant, not legal advice.**
 
-## Install
+## Other ways to install
 
 - **App**: Windows `.exe`, macOS `.dmg` (beta, unsigned) — [Releases](https://github.com/kozhevnikovai/tender-pomoshnik/releases).
 - **Claude Desktop**: open the `.mcpb` file from Releases.
