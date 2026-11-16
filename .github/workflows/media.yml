@@ -1,0 +1,26 @@
+name: media
+# Съёмка интерфейса на открытых документах закупки из ЕИС (scripts/media/source)
+on:
+  workflow_dispatch:
+  push:
+    branches: ['media/**']
+    paths: ['.github/workflows/media.yml', 'scripts/media/**']
+permissions: { contents: read }
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env: { TENDER_HOME: /home/runner/th, TENDER_GPU: cpu, TENDER_LLM_MODEL: qwen3-4b }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npm run build
+      - uses: actions/cache@v6
+        with: { path: ~/th/models/llm, key: "llm-qwen3-4b-v1" }
+      - run: node dist/cli.js models --model qwen3-4b
+      - run: npx playwright-core install ffmpeg
+      - run: xvfb-run -a -s "-screen 0 1920x1080x24" node scripts/media/capture.mjs
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: media, path: "media/" }
