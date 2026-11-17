@@ -53,7 +53,7 @@ Never submits bids, never signs, never touches digital signatures or platform pa
 
 - **App**: Windows `.exe`, macOS `.dmg` (beta, unsigned) — [Releases](https://github.com/kozhevnikovai/tender-pomoshnik/releases).
 - **Claude Desktop**: open the `.mcpb` file from Releases.
-- **CLI** (Node.js 20+): `npx tender-pomoshnik analyze 0372200092126000031`, `npx tender-pomoshnik mcp`.
+- **CLI** (Node.js 22.12+): `npx tender-pomoshnik analyze 0372200092126000031`, `npx tender-pomoshnik mcp`.
 
 ## License
 

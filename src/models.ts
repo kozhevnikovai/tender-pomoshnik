@@ -1,5 +1,5 @@
 // Модели скачиваются один раз в папку пользователя: OCR (Tesseract) и локальная языковая модель.
-import { checkSpace, DEFAULTS, downloadFiles, getModel, missingFiles, MODELS, totalSize as engineTotal, type ModelFile } from "@kozhevnikovai/local-ai";
+import { checkSpace, DEFAULTS, downloadFiles, getModel, missingFiles, MODELS, totalSize as engineTotal, verifyFiles, type ModelFile } from "@kozhevnikovai/local-ai";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { netFetch } from "./net.js";
@@ -69,3 +69,8 @@ export async function download(packs = ["ocr", "llm"], onProgress?: Progress): P
 
 /** OCR нужен только для сканов: модель (~2 МБ) докачивается при первом скане */
 export async function ensureOcr() { if (missing(["ocr"]).length) await download(["ocr"]); }
+
+/** Проверка SHA-256 уже скачанных моделей (результат запоминается до изменения файла); повреждённые удаляются */
+export async function verify(packs = ["ocr", "llm"]): Promise<string[]> {
+  return (await verifyFiles(modelsDir(), packs.flatMap(id => PACKS[id].files))).map(f => f.path);
+}

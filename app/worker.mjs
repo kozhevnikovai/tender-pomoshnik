@@ -1,7 +1,7 @@
 // Фоновый процесс: чтение документов, OCR и разбор не тормозят окно.
 import * as core from "../dist/index.js";
 import { loadConfig, saveConfig, loadProfile, saveProfile, setSecrets, EMPTY_PROFILE } from "../dist/config.js";
-import { download, LLM_MODELS, missing, plan, selectLlm, totalSize } from "../dist/models.js";
+import { download, LLM_MODELS, missing, plan, selectLlm, totalSize, verify } from "../dist/models.js";
 import { detectHardware, recommend } from "@kozhevnikovai/local-ai";
 import { netStats, setOffline } from "../dist/net.js";
 import { runMonitor } from "../dist/monitor.js";
@@ -39,6 +39,8 @@ const methods = {
     saveConfig({ llm: { localModel: id } });
     return { llm: await models(), packs: plan(), left: totalSize(missing()) };
   },
+  /** Целостность скачанных моделей — в фоне после запуска */
+  async verifyModels() { if (downloading) return []; return verify(); },
   async download() {
     if (downloading) return downloading; // повторный клик не запускает вторую загрузку
     downloading = download(["ocr", "llm"], e => port.postMessage({ type: "progress", stage: "download", ...e })).then(() => true).finally(() => { downloading = null; });

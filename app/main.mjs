@@ -1,5 +1,5 @@
 // Тендерный помощник — настольное приложение (Electron). Главный процесс: окно и фоновый обработчик.
-import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell, utilityProcess } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, shell, Tray, utilityProcess } from "electron";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
@@ -10,7 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 // Одна копия приложения: вторая просто показывает окно первой
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
-app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
+app.on("second-instance", () => showWin());
 // Windows: своя иконка и группа в панели задач
 if (process.platform === "win32") app.setAppUserModelId("ai.kozhevnikov.tender");
 
@@ -62,6 +62,33 @@ function call(method, args) {
   return new Promise((resolve, reject) => { pending.set(id, { resolve, reject }); worker.postMessage({ id, method, args, secrets: secrets() }); });
 }
 
+let tray = null;
+let quitting = false; // true — пользователь выбрал «Выйти»
+app.on("before-quit", () => { quitting = true; });
+function showWin() { if (!win || win.isDestroyed()) return createWindow(); if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
+function createTray() {
+  try {
+    const icon = nativeImage.createFromPath(join(here, "ui", "icon.png")).resize({ width: process.platform === "darwin" ? 18 : 16 });
+    tray = new Tray(icon);
+    tray.setToolTip("Тендерный помощник — проверка закупок по расписанию");
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: "Открыть Тендерный помощник", click: showWin },
+      { label: "Мониторинг", click: () => { showWin(); win?.webContents.send("goto", "monitor"); } },
+      { type: "separator" },
+      { label: "Выйти", click: () => app.quit() },
+    ]));
+    tray.on("click", showWin);
+  } catch { tray = null; /* нет области уведомлений — крестик закрывает приложение, как раньше */ }
+}
+/** Один раз показываем, что программа продолжает работать в трее */
+function trayHintOnce() {
+  const flag = join(app.getPath("userData"), "tray-hint-shown");
+  if (existsSync(flag)) return;
+  try { writeFileSync(flag, new Date().toISOString()); } catch { /* не критично */ }
+  const body = process.platform === "darwin" ? "Помощник продолжает проверять закупки по расписанию. Выйти: значок в строке меню → «Выйти»." : "Помощник продолжает проверять закупки по расписанию. Выйти: правой кнопкой по значку в трее → «Выйти».";
+  if (Notification.isSupported()) new Notification({ title: "Тендерный помощник свёрнут", body }).show();
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1240, height: 860, minWidth: 960, minHeight: 640, title: "Тендерный помощник", backgroundColor: "#FFFFFF",
@@ -69,6 +96,13 @@ function createWindow() {
     webPreferences: { preload: join(here, "preload.cjs"), contextIsolation: true, sandbox: true },
   });
   win.removeMenu();
+  // крестик сворачивает в трей: проверка ЕИС по расписанию продолжается; выход — «Выйти» в меню значка
+  win.on("close", e => {
+    if (quitting || !tray || process.env.TENDER_SMOKE) return;
+    e.preventDefault();
+    win.hide();
+    trayHintOnce();
+  });
   win.loadFile(join(here, "ui", "index.html"));
   // ссылки из отчёта (нормы, ЕИС) — во внешнем браузере
   // только https: file:, javascript: и прочие схемы из документа не открываются
@@ -111,13 +145,13 @@ async function autoMonitor() {
     const r = await call("autoMonitor", {});
     if (!r || (!r.found && !r.changes)) return;
     const body = [r.changes && `Изменения в избранных: ${r.changed.join("; ")}`, r.found && `Новые закупки: ${r.found} — ${r.items.join("; ")}`].filter(Boolean).join("\n");
-    if (Notification.isSupported()) { const n = new Notification({ title: "Тендерный помощник", body: body.slice(0, 250) }); n.on("click", () => { win?.show(); win?.webContents.send("goto", "monitor"); }); n.show(); }
+    if (Notification.isSupported()) { const n = new Notification({ title: "Тендерный помощник", body: body.slice(0, 250) }); n.on("click", () => { showWin(); win?.webContents.send("goto", "monitor"); }); n.show(); }
     win?.webContents.send("auto-monitor", r);
   } catch { /* нет сети или ЕИС недоступна — попробуем в следующий раз */ }
 }
 
 app.whenReady().then(() => {
-  if (!gotLock) return; migrateSecrets(); createWindow();
+  if (!gotLock) return; migrateSecrets(); createWindow(); if (!process.env.TENDER_SMOKE) createTray();
   if (process.env.TENDER_SMOKE) return smoke(process.env.TENDER_SMOKE);
   setTimeout(autoMonitor, 60_000); setInterval(autoMonitor, 10 * 60_000);
 });
@@ -139,4 +173,4 @@ async function smoke(files) {
   } catch (e) { fail(e); }
 }
 app.on("window-all-closed", () => { worker?.kill(); app.quit(); });
-app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+app.on("activate", showWin);
