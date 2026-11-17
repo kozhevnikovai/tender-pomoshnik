@@ -2,9 +2,9 @@
 
 <p align="center">
 <a href="https://github.com/kozhevnikovai/tender-pomoshnik/actions/workflows/ci.yml"><img src="https://github.com/kozhevnikovai/tender-pomoshnik/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<img src="https://img.shields.io/badge/44--%D0%A4%D0%97%20%C2%B7%20223--%D0%A4%D0%97-161616" alt="44-ФЗ · 223-ФЗ">
-<img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20(%D0%B1%D0%B5%D1%82%D0%B0)%20%C2%B7%20Claude%20Desktop%20%C2%B7%20CLI-FF5A1F" alt="Windows, macOS, Claude Desktop, CLI">
-<img src="https://img.shields.io/badge/license-MIT-161616" alt="MIT">
+<img src="https://img.shields.io/badge/44--%D0%A4%D0%97%20%C2%B7%20223--%D0%A4%D0%97-16181D" alt="44-ФЗ · 223-ФЗ">
+<img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20(%D0%B1%D0%B5%D1%82%D0%B0)%20%C2%B7%20Claude%20Desktop%20%C2%B7%20CLI-5E6470" alt="Windows, macOS, Claude Desktop, CLI">
+<img src="https://img.shields.io/badge/license-MIT-16181D" alt="MIT">
 </p>
 
 # Тендерный помощник

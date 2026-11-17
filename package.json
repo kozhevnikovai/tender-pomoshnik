@@ -27,8 +27,7 @@
     "rules:check": "node scripts/check-rules.mjs",
     "prepublishOnly": "npm run build && npm test",
     "build:mcpb": "npm run build && node scripts/build-mcpb.mjs",
-    "eval:fetch": "node evals/fetch.mjs",
-    "images": "node scripts/draw-images.mjs"
+    "eval:fetch": "node evals/fetch.mjs"
   },
   "keywords": [
     "44-fz",
