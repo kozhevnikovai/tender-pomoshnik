@@ -6,6 +6,7 @@ let files = [], current = null, state = null;
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll("main section").forEach(s => s.classList.toggle("hidden", s.id !== `tab-${b.dataset.tab}`));
+  const k = document.querySelector(`#tab-${b.dataset.tab} h1`); if (k && $("crumb")) $("crumb").textContent = b.dataset.tab === "tender" ? "Закупка" : k.textContent;
   if (b.dataset.tab === "archive") loadArchive();
   if (b.dataset.tab === "monitor") renderQueries();
 });
