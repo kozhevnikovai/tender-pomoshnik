@@ -83,8 +83,8 @@ function createTray() {
 /** Один раз показываем, что программа продолжает работать в трее */
 function trayHintOnce() {
   const flag = join(app.getPath("userData"), "tray-hint-shown");
-  if (existsSync(flag)) return;
-  try { writeFileSync(flag, new Date().toISOString()); } catch { /* не критично */ }
+  // создаём отметку атомарно: если она уже есть, подсказку не показываем
+  try { writeFileSync(flag, new Date().toISOString(), { flag: "wx" }); } catch { return; }
   const body = process.platform === "darwin" ? "Помощник продолжает проверять закупки по расписанию. Выйти: значок в строке меню → «Выйти»." : "Помощник продолжает проверять закупки по расписанию. Выйти: правой кнопкой по значку в трее → «Выйти».";
   if (Notification.isSupported()) new Notification({ title: "Тендерный помощник свёрнут", body }).show();
 }

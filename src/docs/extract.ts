@@ -142,7 +142,7 @@ export async function extractBuffer(name: string, buf: Buffer, opts: ExtractOpts
 
 export function fromPlain(name: string, text: string): DocText {
   // переносы строк внутри абзаца сохраняем: «Ширина: 600 мм» и «Длина: …» на соседних строках — разные характеристики
-  const paras = text.split(/\r?\n\s*\r?\n|\r?\n(?=\s*\d+(?:\.\d+)*[.)]\s)/).map(s => s.replace(/[^\S\n]+/g, " ").replace(/ *\r?\n */g, "\n").trim()).filter(Boolean);
+  const paras = text.split(/\r?\n\s*\r?\n|\r?\n(?=\s*\d+(?:\.\d+)*[.)]\s)/).map(s => s.replace(/\r/g, "").replace(/[^\S\n]+/g, " ").replace(/ ?\n ?/g, "\n").trim()).filter(Boolean);
   return { name, kind: "txt", unit: "para", parts: paras.map((t, i) => ({ n: i + 1, text: t })), tables: [], warnings: [] };
 }
 
