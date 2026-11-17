@@ -8,13 +8,14 @@ const N = String.raw`(\d+(?:[  ]\d{3})*(?:[.,]\d+)?)`;
 /** Разбор требования: «не менее 8», «≤ 2», «от 1,5 до 3», «белый» */
 export function parseRequired(s: string): Pick<Requirement, "op" | "min" | "max" | "text" | "unit"> {
   const t = s.replace(/\s+/g, " ").replace(/больше или равно/gi, "не менее").replace(/меньше или равно/gi, "не более").replace(/(?<![а-яё])больше(?![а-яё])/gi, "более").replace(/(?<![а-яё])меньше(?![а-яё])/gi, "менее").replace(/значение характеристики не может изменяться участником закупки|участник закупки указывает в заявке[^.]*\.?/gi, "").trim();
-  let m = t.match(new RegExp(String.raw`(?:не менее|не ниже|не меньше|≥|более|свыше)\s*${N}\s*([^\d,;]*?)\s*(?:,|и|;)?\s*(?:не более|не выше|не больше|≤|менее)\s*${N}\s*(.*)`, "i"));
+  let m = t.match(new RegExp(String.raw`(?:не менее|не ниже|не меньше|≥|(?<!не\s)более|свыше)\s*${N}\s*([^\d,;]*?)\s*(?:,|и|;)?\s*(?:не более|не выше|не больше|≤|менее)\s*${N}\s*(.*)`, "i"));
   if (m) return { op: "range", min: num(m[1]), max: num(m[3]), unit: (m[4] || m[2])?.trim() || undefined };
   m = t.match(new RegExp(String.raw`(?:от|в диапазоне от)\s*${N}\s*(?:[а-яa-z%°/.\d]*\s*)?до\s*${N}\s*(.*)`, "i")) || t.match(new RegExp(String.raw`^${N}\s*[-–—]\s*${N}\s*(.*)$`));
   if (m) return { op: "range", min: num(m[1]), max: num(m[2]), unit: m[3]?.trim() || undefined };
-  m = t.match(new RegExp(String.raw`(?:не менее|не ниже|не меньше|≥|>=|более|свыше|выше)\s*${N}\s*(.*)`, "i"));
+  // «более» внутри «не более» — это верхняя граница, а не нижняя
+  m = t.match(new RegExp(String.raw`(?:не менее|не ниже|не меньше|≥|>=|(?<!не\s)более|свыше|(?<!не\s)выше)\s*${N}\s*(.*)`, "i"));
   if (m) return { op: ">=", min: num(m[1]), unit: m[2]?.trim() || undefined };
-  m = t.match(new RegExp(String.raw`(?:не более|не выше|не больше|≤|<=|менее|ниже|до)\s*${N}\s*(.*)`, "i"));
+  m = t.match(new RegExp(String.raw`(?:не более|не выше|не больше|≤|<=|(?<!не\s)менее|(?<!не\s)ниже|до)\s*${N}\s*(.*)`, "i"));
   if (m) return { op: "<=", max: num(m[1]), unit: m[2]?.trim() || undefined };
   m = t.match(new RegExp(String.raw`^${N}\s*([а-яa-z%°/.²³]*)$`, "i"));
   if (m) return { op: "=", min: num(m[1]), max: num(m[1]), unit: m[2] || undefined };
@@ -62,11 +63,13 @@ export function extractRequirements(docs: DocText[]): Requirement[] {
     }
     if (d.tables.length) continue;
     // PDF/TXT: строки вида «Объём памяти — не менее 8 ГБ»
-    const re = new RegExp(String.raw`([А-ЯЁA-Z][^:\n|;]{2,80}?)\s*(?:[:—–-]|\|)\s*((?:не менее|не более|не ниже|не выше|от)\s*${N}[^;\n|]{0,40})`, "g");
+    // и строки с точным значением и единицей: «Ширина: 600 мм», «Масса — 12,5 кг»
+    const UNIT = String.raw`(?:мкм|мм|см|дм|км|кв\.\s?м|м²|м2|м³|м3|м|кг|г|т|мл|л|шт\.?|%|°[CС]|°|к[Вв]т|[Вв]т|В|А|МГц|ГГц|Гц|[ГМТ][Бб]|дюйм\S*|ч|мин|с|лет|год\S*|мес\S*)`;
+    const re = new RegExp(String.raw`([А-ЯЁA-Z][^:\n|;]{2,80}?)[^\S\n]*(?:[:—–-]|\|)[^\S\n]*((?:не менее|не более|не ниже|не выше|от)[^\S\n]*${N}[^;\n|]{0,40}|${N}(?:[^\S\n]*±[^\S\n]*${N})?[^\S\n]*${UNIT}(?![а-яёА-ЯЁa-zA-Z]))`, "g");
     for (const p of d.parts) {
       for (const m of p.text.matchAll(re)) {
         const name = m[1].trim();
-        if (/^(?:срок|цена|оплата|аванс|штраф|пени|обеспечение|размер|начальная|дата|заказчик|поставщик|контракт)/i.test(name)) continue;
+        if (/^(?:срок|цена|оплата|аванс|штраф|пени|пеня|неустойка|ндс|ставка|обеспечение|размер|начальная|дата|заказчик|поставщик|контракт)/i.test(name)) continue;
         out.push({ item: "Товар", name, required: m[2].trim(), ...parseRequired(m[2]), source: sourceAt(d, p.n, p.text.replace(/\s+/g, " "), Math.max(0, p.text.replace(/\s+/g, " ").indexOf(name)), m[0].length) });
       }
     }

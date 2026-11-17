@@ -242,5 +242,6 @@ $("s-models").onclick = dl();
   if (state.llm.first) { document.querySelector('[data-tab="settings"]').click(); $("dl-info").textContent = "Модель выбрана по вашему компьютеру — можно сменить выше. Нажмите «Скачать модели», это нужно один раз."; }
   $("ver").textContent = `v${state.version} · kozhevnikovai`;
   if (state.downloading) dl()();
+  tp.core("verifyModels", {}).then(bad => { if (!bad?.length) return; document.querySelector('[data-tab="settings"]').click(); $("dl-info").textContent = `Файл модели повреждён и удалён: ${bad.join(", ")}. Нажмите «Скачать модели», чтобы скачать его заново.`; tp.core("status", {}).then(st => renderPacks(st.packs)).catch(() => {}); }).catch(() => {});
   $("s-about").textContent = `Версия ${state.version} · база норм ${state.rulesVersion}, карточек: ${state.rules} · MIT · github.com/kozhevnikovai/tender-pomoshnik`;
 })();
