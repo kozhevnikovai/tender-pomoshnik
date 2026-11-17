@@ -16,20 +16,20 @@ function changesHtml(c: Changes): string {
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const d8 = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-"); const t = iso.slice(11, 16); return `${d}.${m}.${y}${t ? " " + t : ""}`; };
 
-const CSS = `.diff-add{background:#E7F3EC;border-radius:6px;padding:4px 8px;margin:4px 0}.diff-del{background:#FCE9E7;border-radius:6px;padding:4px 8px;margin:4px 0;text-decoration:line-through;color:#5C5C57}
+const CSS = `.diff-add{background:#E7F3EC;border-radius:6px;padding:4px 8px;margin:4px 0}.diff-del{background:#FCE9E7;border-radius:6px;padding:4px 8px;margin:4px 0;text-decoration:line-through;color:#5E6470}
 
-:root{--bg:#FBFBFA;--card:#fff;--ink:#1A1A19;--pencil:#5C5C57;--line:#E8E8E5;--plate:#F1F1EE;--acc:#C2410C;--ok:#1F7A4A;--okbg:#E7F3EC;--warn:#9A5B00;--warnbg:#FFF3DF;--bad:#B3261E;--badbg:#FCE9E7}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 Geologica,"Segoe UI",system-ui,sans-serif}
+:root{--bg:#F4F5F7;--card:#fff;--ink:#16181D;--pencil:#5E6470;--line:#E3E6EA;--plate:#F0F2F5;--acc:#1A7350;--ok:#1F7A4A;--okbg:#E7F3EC;--warn:#9A5B00;--warnbg:#FFF3DF;--bad:#B3261E;--badbg:#FCE9E7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 Onest,"Segoe UI",system-ui,sans-serif}
 .sheet{max-width:1040px;margin:32px auto;padding:0 20px 40px}
 .mono{font-variant-numeric:tabular-nums}
-.kicker{font-size:13px;font-weight:600;color:var(--acc)}
+.kicker{font-size:13px;font-weight:600;color:var(--pencil)}.kicker:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#2FB37A;margin-right:8px;vertical-align:1px}
 h1{font-size:28px;line-height:1.25;margin:8px 0 6px;font-weight:600;letter-spacing:-.01em}h2{font-size:18px;margin:32px 0 12px;font-weight:600}h2 .n{display:none}
 .meta{color:var(--pencil);font-size:14px}.axis{display:none}
 table{border-collapse:separate;border-spacing:0;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px}
 th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--plate);color:var(--pencil);font-weight:600;font-size:13px}tr:last-child td{border-bottom:0}
 .src{font-size:12px;color:var(--pencil);display:block;margin-top:3px}
 .q{display:block;font-size:12px;color:var(--pencil);border-left:2px solid var(--line);padding-left:8px;margin-top:4px}
-.law{font-size:12px;background:var(--plate);border-radius:999px;padding:1px 8px;margin:4px 4px 0 0;display:inline-block;color:var(--ink);text-decoration:none}.law:hover{background:#E6E6E2}
+.law{font-size:12px;background:var(--plate);border-radius:999px;padding:1px 8px;margin:4px 4px 0 0;display:inline-block;color:var(--ink);text-decoration:none}.law:hover{background:#E6E9EE}
 .law.check{background:var(--warnbg);color:var(--warn)}
 .tag{font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;white-space:nowrap}
 .v-можем,.s-ok,.sev-низкий{color:var(--ok)}.v-нужно,.s-check,.sev-средний{color:var(--warn)}.v-нельзя,.s-missing,.sev-высокий{color:var(--bad)}
@@ -38,9 +38,9 @@ th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;verti
 .main>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .main .k{font-size:13px;color:var(--pencil)}.main .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
 .verdict{font-size:26px;font-weight:600}
-.bar{display:flex;gap:8px;margin:16px 0}.bar button{font:500 14px Geologica,system-ui,sans-serif;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px 14px;cursor:pointer;color:var(--ink)}.bar button:hover{background:var(--plate)}
+.bar{display:flex;gap:8px;margin:16px 0}.bar button{font:500 14px Onest,system-ui,sans-serif;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px 14px;cursor:pointer;color:var(--ink)}.bar button:hover{background:var(--plate)}
 button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-pre.draft{white-space:pre-wrap;border:1px solid var(--line);border-radius:12px;padding:16px;font:14px/1.55 Geologica,sans-serif;background:var(--card)}
+pre.draft{white-space:pre-wrap;border:1px solid var(--line);border-radius:12px;padding:16px;font:14px/1.55 Onest,sans-serif;background:var(--card)}
 ol,ul{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px 14px 36px}li{margin:4px 0}
 .disc{background:var(--warnbg);border-radius:12px;padding:10px 14px;color:var(--ink);font-size:13px}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--pencil)}
